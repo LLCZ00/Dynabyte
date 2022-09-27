@@ -7,7 +7,7 @@ with open(os.path.join(this_dir, "README.md"), "r") as file:
 
 setup(
     name="dynabyte",
-    version="1.0.0",
+    version="1.0.1",
     author="LLCZ00",
     description="Byte manipulation module for files and arrays",
     long_description=readme,
