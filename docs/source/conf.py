@@ -9,7 +9,7 @@
 project = 'dynabyte'
 copyright = '2022, LLCZ00'
 author = 'LLCZ00'
-release = '1.0.0'
+release = '1.0.1'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
