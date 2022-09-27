@@ -2,7 +2,7 @@
 ### _Simplifying Simple Byte Operations_
 Dynabyte is a python module designed to streamline the process of de-obfuscating strings and files, allowing you to perform bit-wise operations on large amounts of data with as little code as possible.
 ## Basic Usage
-See [*documentation*](https://google.com)
+See [*documentation*](https://dynabyte.readthedocs.io/en/latest/)
 
 De-obfuscating a string:
 ```py
