@@ -51,3 +51,4 @@ However this is all usually inconsquential when working with data typically foun
     - Switching to numpy arrays (instead of bytearrays) and integrating them with Cython
     - Rewriting file IO functionality in C and wrapping them
 - Add support for common encryption schemes (AES) and alternative encodings (Base64)
+- The readthedocs.io page is ugly
