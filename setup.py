@@ -30,5 +30,5 @@ setup(
     python_requires=">=3.8",
     zip_safe=False,
     install_requires=[],
-    packages=find_packages()
+    packages=find_packages(exclude=["examples"])
 )
