@@ -3,24 +3,40 @@ Core
 
 Classes and functions providing the core functionality of Dynabyte
 
-Functions
----------
+Main Function
+-------------
 The main functions by which to interact with the classes
 
-.. autofunction:: dynabyte.loadarray(input_data: "Input byte array (str, bytearray, list, or bytes)")
+.. autofunction:: dynabyte.load(input: "Input array (str, bytearray, list, or bytes) or file path", file: "Specify string as a filepath" = False)
 
-.. autofunction:: dynabyte.loadfile(path: "Input file path", output: "Optional output file path" = None, buffersize: int = 8192)
 
 Classes
 -------
+
+BuiltIns
+^^^^^^^^^^^^^^^^^^^^^
+
+Base class, functions are inherited by DynabyteArray and DynabyteFile
+
+.. autofunction:: dynabyte.core.BuiltIns.XOR(self, value: "int, str, list, bytes, or bytearray" = 0, *, count: int = 1)
+
+.. autofunction:: dynabyte.core.BuiltIns.SUB(self, value: int = 0, *, count: int = 1)
+
+.. autofunction:: dynabyte.core.BuiltIns.ADD(self, value: int = 0, *, count: int = 1)
+
+.. autofunction:: dynabyte.core.BuiltIns.ROL(self, value: int = 0, *, count: int = 1)
+
+.. autofunction:: dynabyte.core.BuiltIns.ROR(self, value: int = 0, *, count: int = 1)
+
 DynabyteArray
 ^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: dynabyte.core.DynabyteArray(inputarray: bytearray)
+.. autofunction:: dynabyte.core.DynabyteArray(input)
 
-.. autofunction:: dynabyte.core.DynabyteArray.run(self, callback: "Callback function: func(byte, offset) -> byte", count: "Number of times to run array though callback function" = 1)
+.. autofunction:: dynabyte.core.DynabyteArray.run(self, callback: "Callback function: func(byte, offset) -> byte", *, output: "Optional output file path" = None, count: "Number of times to run array though callback function" = 1)
 
-.. autofunction:: dynabyte.core.DynabyteArray.printbytes(self, format: "C, Python, string, or 'raw' array format" = None, delim: str = ", ")
+.. autofunction:: dynabyte.core.DynabyteArray.getdata(self, format=None)
 
+.. autofunction:: dynabyte.core.DynabyteArray.print(self, style: "C, Python, string, or 'raw' array format" = None, delim: "Delimiter between values" = ", ", end: str = "\n")
 
 DynabyteFile
 ^^^^^^^^^^^^^^^^^^^^^
@@ -28,11 +44,11 @@ DynabyteFile
 
 .. autofunction:: dynabyte.core.DynabyteFile.run(self, callback: "Callback function: func(byte, offset) -> byte", *, output: "Optional output file path" = None, count: "Number of times to run array though callback function" = 1)
 
-.. autofunction:: dynabyte.core.DynabyteFile.getsize(self, Print: bool = False)
+.. autofunction:: dynabyte.core.DynabyteFile.getsize(self, verbose: bool = False)
 
-.. autofunction:: dynabyte.core.DynabyteFile.gethash(self, hash: str = "md5", Print: bool = False)
+.. autofunction:: dynabyte.core.DynabyteFile.gethash(self, hash: str = "sha256", verbose: bool = False)
 
-.. autofunction:: dynabyte.core.DynabyteFile.comparetofile(self, filepath: str, verbose: bool = True)
+.. autofunction:: dynabyte.core.DynabyteFile.delete(self)
 
 
 DynabyteCallback
@@ -41,8 +57,8 @@ DynabyteCallback
 
 .. autofunction:: dynabyte.core.DynabyteCallback.__call__(self, chunk: bytes)
 
-DynabyteFileHandler
+DynabyteFileManager
 ^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: dynabyte.core.DynabyteFileHandler(path: str, output: str, buffersize: int)
+.. autofunction:: dynabyte.core.DynabyteFileManager(input: str, output: str, buffersize: int))
 
-.. autofunction:: dynabyte.core.DynabyteFileHandler.write(chunk: bytes)
+.. autofunction:: dynabyte.core.DynabyteFileManager.write(chunk: bytes)
