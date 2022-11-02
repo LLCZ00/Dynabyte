@@ -13,75 +13,125 @@
 """
 dynabyte.core
 
-- Functions and classes providing the main functionality of Dynabyte
-- Classes are meant to be initialized through loadfile and loadarray
+- Classes providing the core functionality of Dynabyte
 """
 
 import dynabyte.utils as utils
 
 
-def loadfile(
-    path: "Input file path",
-    output: "Optional output file path" = None,
-    buffersize: int = 8192):
-    """Return instance of DynabyteFile, for performing actions on files"""
-    return DynabyteFile(path, output, buffersize)
+def load(
+    input: "Input array (str, bytearray, list, or bytes) or file path",
+    file: "Specify string as a filepath" = False):
+    """Return instance of DynabyteArray or DynabyteFile"""
+    if file:
+        return DynabyteFile(input)
+    return DynabyteArray(input)
 
 
-def loadarray(input_data: "Input byte array (str, bytearray, list, or bytes)"):
-    """Return instance of DynabyteArray, for performing actions on arrays (strings, bytes)."""
-    return DynabyteArray(utils.getbytearray(input_data))
-
-
-""" Core Dynabyte Classes """
-
-class DynabyteArray:
-    """Dynabyte class for interacting with arrays"""
-
-    def __init__(self, inputarray: bytearray):
-        self.array = inputarray
+class BuiltIns:
+    """Base class, mainly for built-in bit-wise operation methods"""
+    buffersize = 8192
         
-    def printbytes(
+    def run(self, callback, *, output=None, count=1):
+        """Execute operations defined in a callback function upon data. Gives access to offset."""
+        raise NotImplementedError
+    
+    def XOR(self, value: "int, str, list, bytes, or bytearray" = 0, *, count: int = 1):
+        """XOR each byte of the current instance against 'value', 'count' times
+        Providing a value of any type other than int will result in it being used as a key
+        """
+        if type(value) is int:
+            return self.run(callback=lambda x, y: x ^ value, count=count)
+        else:
+            key = utils.getbytearray(value)
+            return self.run(callback=lambda x, y: x ^ key[y % len(key)], count=count)
+        
+    def SUB(self, value: int = 0, *, count: int = 1):
+        """Subtract 'value' from each byte of the current instance, 'count' times"""
+        return self.run(callback=lambda x, y: x - value, count=count)
+        
+    def ADD(self, value: int = 0, *, count: int = 1):
+        """"Add 'value' to each byte of the current instance, 'count' times"""
+        return self.run(callback=lambda x, y: x + value, count=count)
+        
+    def ROL(self, value: int = 0, *, count: int = 1):
+        """Circular rotate shift left each byte of the current instance by 'value' bits, 'count' times"""
+        return self.run(callback=lambda x, y: utils.RotateLeft(x, value), count=count)
+        
+    def ROR(self, value: int = 0, *, count: int = 1):
+        """Circular rotate shift right each byte of the current instance by 'value' bits, 'count' times"""
+        return self.run(callback=lambda x, y: utils.RotateRight(x, value), count=count)    
+
+
+class DynabyteArray(BuiltIns):
+    """Dynabyte class for interacting with arrays"""
+    def __init__(self, input):
+        self.array = utils.getbytearray(input)
+    
+    def print(
         self,
-        format: "C, Python, string, or 'raw' array format" = None,
-        delim: "Delimiter between values" = ", ") -> None:
-        """Print array of current instance in C-style array, Python list, or default formats"""
-        utils.printbytes(self.array, format, delim)
+        style: "C, Python, string, or 'raw' array format" = None,
+        delim: "Delimiter between values" = ", ",
+        end: str = "\n") -> None:
+        """Print array of current instance in C-style array, Python list, or hex value (default) formats"""
+        utils.printbytes(self.array, style, delim, end)
+        
+    def getdata(self, format=None):
+        """Return current instance's array data in bytearray (default, None), raw bytes, list, or string formats"""
+        try:
+            format = format.lower()
+        except AttributeError:
+            pass
+            
+        data = self.array
+        if format == "string":
+            try:
+                data = self.array.decode() 
+            except UnicodeDecodeError:
+                pass
+        if format == "bytes":
+            data = bytes(self.array)
+        elif format == "list":
+            data = list(self.array)
+        else:
+            pass
+            
+        return data
         
     def run(
         self,
         callback: "Callback function: func(byte, offset) -> byte",
+        *,
+        output: "Optional output file path" = None, 
         count: "Number of times to run array though callback function" = 1):
-        """Method for executing operations (defined in callback function) upon array data"""
+        """Execute operations defined in a callback function upon data. Gives access to offset."""
 
         for _ in range(count):
             callback_function = DynabyteCallback(callback)
             self.array = callback_function(self.array)
+        if output:
+            with open(output, 'wb') as file:
+                file.write(self.array)
         self.array = bytearray(self.array)
-        return self    
-
-
-class DynabyteFile:
-    """Dynabyte class for interacting with files"""
-    def __init__(self, path: str, output: str, buffersize: int):
-        self.path = path
-        self.output_path = output
-        self.buffersize = buffersize
+        return self
         
-    def comparetofile(self, filepath: str, verbose: bool = True) -> bool:
-        """Compare bytes of current DynabyteFile instance file to those of the given file.        
-        If verbose==True (default) results will be printed to the screen.
-        Return: True = no error, False = errors found.
-        """
-        return utils.comparefilebytes(self.path, filepath, verbose)
 
-    def getsize(self, Print: bool = False) -> int:
+class DynabyteFile(BuiltIns):
+    """Dynabyte class for interacting with files"""
+    def __init__(self, input):
+        self.path = input
+        
+    def getsize(self, verbose: bool = False) -> int:
         """Return size of current DynabyteFile instance file in bytes"""
-        return utils.getsize(self.path, Print)
+        return utils.getfilesize(self.path, verbose)
 
-    def gethash(self, hash: str = "md5", Print: bool = False) -> str:
-        """Return hash of current DynabyteFile instance file (Default: MD5)"""
-        return utils.gethash(self.path, hash, Print)
+    def gethash(self, hash: str = "sha256", verbose: bool = False) -> str:
+        """Return hash of current DynabyteFile instance file (Default: SHA256)"""
+        return utils.getfilehash(self.path, hash, verbose)
+        
+    def delete(self):
+        """Delete input file"""
+        return utils.deletefile(self.path)
         
     def run(
         self,
@@ -89,53 +139,32 @@ class DynabyteFile:
         *,
         output: "Optional output file path" = None,
         count: "Number of times to run array though callback function" = 1) -> object:
-        """Method for executing operations (defined in callback function) upon file data.
+        """Execute operations defined in a callback function upon data. Gives access to offset.
         Returns self, or instance created from output file"""
-
-        if output is not None:
-            self.output_path = output # Change output path if new one is given when calling run             
-        written_path = None # To be assigned the filepath of whatever file gets written to (the input file or a new file)        
         
+        input = self.path # Running count > 1 and outputting a file at the same time breaks if I don't do this
         for _ in range(count):
-            callback_function = DynabyteCallback(callback) # DynabyteCallback class (cython_extensions/callback.pyx) handles chunks  
-            with DynabyteFileHandler(self.path, self.output_path, self.buffersize) as file_manager:
+            callback_function = DynabyteCallback(callback)
+            with DynabyteFileManager(input, output, self.buffersize) as file_manager:
                 for chunk in file_manager: 
                     file_manager.write(callback_function(chunk))
-                written_path = file_manager.outputpath
-        if written_path == self.path:
-            return self
-        else:
-            return DynabyteFile(written_path, None, buffersize=self.buffersize) # Return new instance if bytes written to new file
-
-
-class DynabyteCallback:
-    """Callback function handler, runs bytes through given function."""
-    def __init__(self, function):
-        self.offset = 0
-        self.callback = function
-        
-    def __call__(self, chunk: bytes) -> bytes:
-        """Returns bytes after being processed through callback function"""
-        chunk_length = len(chunk)
-        buffer = bytearray(chunk_length)
-        for chunk_offset, byte in enumerate(chunk):
-            buffer[chunk_offset] = (self.callback(byte, self.offset) & 0xff)
-            self.offset += 1
-        return bytes(buffer)
+            if output:
+                input = output # On the 2nd cycle it'll continue reading from the original (not up to date) file
+                output = None
+        return self
     
 
-class DynabyteFileHandler:
+class DynabyteFileManager:
     """Context manager for file objects, can be iterated over to retrieve buffer of file bytes.
     Handles the input/output of one or two files.
     If no output path is given, the input will be overwritten
     """
-    start_position = 0
-    
-    def __init__(self, path: str, output: str, buffersize: int):  # 8kb by default
-        self.path = path
-        self.outputpath = output
+    start_position = 0    
+    def __init__(self, input: str, output: str, buffersize: int): 
+        self.input_file = input
+        self.output_file = output
         self.buffersize = buffersize
-        self.last_position = self.start_position
+        self.last_position = self.start_position      
 
     def write(self, chunk: bytes) -> None:
         """Write bytes to file"""
@@ -143,20 +172,17 @@ class DynabyteFileHandler:
         self.writer.write(chunk)
 
     def __enter__(self):
-        if self.outputpath is None:
-            self.reader = self.writer = open(
-                self.path, "rb+"
-            )  # reader and writer will use the same file handle if no output given
-            self.outputpath = self.path
+        if self.output_file is None:
+            self.reader = self.writer = open(self.input_file, "rb+")  # reader/writer will use the same file handle if no output given
         else:
-            self.reader = open(self.path, "rb")
-            self.writer = open(self.outputpath, "wb")
+            self.reader = open(self.input_file, "rb")
+            self.writer = open(self.output_file, "wb")
         return self
 
     def __exit__(self, type, val, traceback):
         self.reader.close()
         self.writer.close()
-
+           
     def __iter__(self):
         return self
 
@@ -168,6 +194,22 @@ class DynabyteFileHandler:
         else:
             return chunk
 
+
+class DynabyteCallback:
+    """Callback function handler, runs bytes through given function."""
+    def __init__(self, function):
+        self.callback = function
+        self.global_offset = 0
+        
+    def __call__(self, chunk: bytes) -> bytes:
+        """Returns bytes after being processed through callback function"""
+        chunk_length = len(chunk)
+        buffer = bytearray(chunk_length)
+        for chunk_offset, byte in enumerate(chunk):
+            buffer[chunk_offset] = (self.callback(byte, self.global_offset) & 0xff)
+            self.global_offset += 1
+        return bytes(buffer)
+        
 
 if __name__ == "__main__":
     pass
