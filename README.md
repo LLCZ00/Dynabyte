@@ -1,27 +1,97 @@
 # Dynabyte
-### _Simplifying Simple Byte Operations_
-Dynabyte is a python module designed to streamline the process of de-obfuscating strings and files, allowing you to perform bit-wise operations on large amounts of data with as little code as possible.
+### _Simplifying Byte Operations_
+Dynabyte is a python module and CLI tool designed to streamline the process of de-obfuscating data, allowing you to perform bit-wise operations on strings or files with as little code as possible.
 ## Basic Usage
 See [*documentation*](https://dynabyte.readthedocs.io/en/latest/)
 
+Dynabyte can be used as a command line tool, or imported as a module for finer control over data and operations.
+### CLI
+```
+usage: dynabyte [-h] [-s INPUT] [-x INPUT] [-f INPUT] [-o OUTPUT] [--xor KEY] [--xor-hex KEY] [--order {xor,ops}]
+                [--delim SEP] [--style {c,list,int}]
+                [ops ...]
+positional arguments:
+  ops                   Additional operations to be performed on each input byte, executed from left to right (xor,
+                        add, sub, rol, ror). All values interpreted as hex.
+options:
+  -h, --help            show this help message and exit
+  -s INPUT, --string INPUT
+                        Input string to perform operations on.
+  -x INPUT, --hex-in INPUT
+                        Input hex (comma seperated) to perform operations on.
+  -f INPUT, --file INPUT
+                        Input file to perform operation on.
+  -o OUTPUT, --output OUTPUT
+                        Output file.
+  --xor KEY             Quick XOR; XOR input against given key (string).
+  --xor-hex KEY         Quick XOR; XOR input against given key (comma seperated hex).
+  --order {xor,ops}     Declare if Quick XOR or additional ops are executed first, if both options are being used.
+                        (Default: xor)
+  --delim SEP           Set output hex delimiter. (Default: ',')
+  --style {c,list,int}  Set style to print output bytes. (Default: Comma deliminated hex)
+Examples:
+        dynabyte --string plaintext xor 56 sub 12
+        dynabyte -f sus.bin -o sus.exe --xor 'password' add 0x12
+        dynabyte --hex 0x1b,0x52,0xa,0x18,0x44,0x16,0x19,0x57 --xor k3y
+```
+Encoding/decoding a string:
+```
+$ dynabyte -s pa$$w0rd! --xor "mr.pib" sub 5 ror 3
+Callback function:
+lambda byte, offset: utils.RotateRight(((byte ^ key[offset % 6]) - 5), 3)
+Output bytes:
+0x3,0xc1,0xa0,0xe9,0x23,0xa9,0x43,0x22,0x41
+Output string:
+(Could not decode)
+```
+Any number of additional operations (*xor*, *add*, *sub*, *ror*, *rol*) can be added to the end of the command, to be performed on each byte sequentially from left to right. So to decode the string you just reverse the previous operations:
+```
+$ dynabyte --hex 0x3,0xc1,0xa0,0xe9,0x23,0xa9,0x43,0x22,0x41 --order ops --xor "mr.pib" rol 3 add 5
+Callback function:
+lambda byte, offset: ((utils.RotateLeft(byte, 3)) + 5) ^ key[offset % 6]
+Output bytes:
+0x70,0x61,0x24,0x24,0x77,0x30,0x72,0x64,0x21
+Output string:
+pa$$w0rd!
+```
+A dynabyte callback function (see below) is dynamically generated to perform the command, and can be acceptably copy/pasted into script using the dynabyte module, if one were so incline.
+### Module
 De-obfuscating a string:
 ```py
 import dynabyte
 
-decrypt = dynabyte.loadarray("\osb`pnarq-`a_v{t")
-decrypt.run(lambda byte, offset : (byte + 3) ^ 0x10) # Callback function to perform on each byte
-decrypt.printbytes(format="string") # Output: "Obfuscated string"
+obf_string = dynabyte.load("\osb`pnarq-`a_v{t")
+obf_string.ADD(3).XOR(0x10) # Add 3 to each byte, then XOR each byte by 0x10
+obf_string.print(style="string") # Output: "Obfuscated string"
 ```
-Encrypting a binary file w/ key 
+Built-in operation methods (*XOR*, *ADD*, *SUB*, *ROL*, *ROR*) can be used on both files and strings, the order of execution being left to right. 
+
+*XOR* can also used to encode/decode against a key:
+```py
+import dynabyte as db
+
+mystr = db.load([0x1b, 0x52, 0xa, 0x18, 0x44, 0x16, 0x19, 0x57]) # Encoded bytes from CLI example
+mystr.ROL(3).ADD(5).XOR("mr.pib")
+mystr.print("string") # Output: "pa$$w0rd!"
+```
+Custom callback functions can be used to execute operations with the *run()* method. This is generally more efficient for longer operations, and is recommended for files. Using callback functions also gives you access to the "global" offset of a particular byte, as well as the option to write the results to a new file.
+
+Callback Signature:
+```py
+def callback(byte: bytes, offset: int): -> bytes
+    return byte
+```
+Encrypting/decrypting a file: 
 ```py
 import dynabyte
 
-key = dynabyte.getbytes("bada BING!")
-def encrypt(byte, offset): # Callbacks can be lambdas or regular functions
-    i = offset % len(key)
-    return (byte ^ key[i]) + 0xc
-dynabyte.loadfile(r"C:\Users\IEUser\suspicious.bin").run(encrypt, count=2) # Run file through encryption function twice
-dynabyte.printbytes(key, format="C") # Output: "unsigned char byte_array[] = { 0x62, 0x61, 0x64, ... };"
+key = b"bada BING!"
+callback = lambda byte, offset: (byte ^ key[offset % len(key)]) + 0xc # Callbacks can be lambdas or regular functions
+myfile = dynabyte.load(r"C:\Users\IEUser\suspicious.bin")
+# Run file through callback function twice, encrypting file
+myfile.run(callback, count=2) 
+# Decrypt file by reversing the operations, output to file
+myfile.run(lambda byte, offset: (byte - 0xc) ^ key[offset % len(key)], count=2, output="sus_copy.bin") 
 ```
 ## Installation
 
@@ -29,26 +99,9 @@ Install from PyPI
 ```
 pip install dynabyte
 ```
-## I/O Speed
-Naturally, since dynabyte passes each byte through a callback function, the delay starts to become noticeable around 5MB or so. As of v1.0.0, dynabyte's base speed is around 4.4MB(mebibytes) per second. This is the speed of simply passing the bytes through a "No-op" function that just returns an unaltered byte. More operations, of course, result in lower speeds. 
-
-Benchmark of 5MB file:
-```
-NOP:                 1.06s -> 4.43 MB/s
-Add,Sub:             1.12s -> 4.19 MB/s
-XOR:                 1.22s -> 3.85 MB/s
-XOR/Sub,Add:         1.28s -> 3.67 MB/s
-ROR,ROL              2.17s -> 2.17 MB/s
-Sub,Add/ROL,ROR:     2.27s -> 2.07 MB/s
-XOR/ROR,ROL:         2.34s -> 2.01 MB/s
-XOR/ROR,ROL,Add,Sub: 2.40s -> 1.96 MB/s
-```
-
-However this is all usually inconsquential when working with data typically found during malware analysis, i.e. strings and extracted files/shellcode. If there happens to be a 50MB XOR'd file embedded within a malware sample, 12 seconds isn't really that bad of a wait.
 ## Known Issues & TODO
 - Processing speed of larger files could possibly be improved. Things to try:
     - Migrating all file IO and byte processing into Cython
     - Switching to numpy arrays (instead of bytearrays) and integrating them with Cython
     - Rewriting file IO functionality in C and wrapping them
 - Add support for common encryption schemes (AES) and alternative encodings (Base64)
-- The readthedocs.io page is ugly
