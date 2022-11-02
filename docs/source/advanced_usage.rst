@@ -16,26 +16,18 @@ encrypt the file.
 
 .. code-block:: python
 
-    import dynabyte, os, time
+    import dynabyte, os
 
-    start_time = time.time()
-
-    keysolve = dynabyte.loadarray([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]) # Load the first 8 bytes of a normal PNG header
     encrypted_header = [0xc7, 0xc7, 0x25, 0x1d, 0x63, 0x0d, 0xf3, 0x56] # The first 8 bytes of the encypted header (capa.png.encrypted)
-    def reverse_decryption_scheme(byte, offset):
-        i = offset % 8
-        byte = byte + i
-        byte = dynabyte.RotateRight(byte, i)
-        byte = byte ^ encrypted_header[i]
-        return byte
+	def reverse_decryption_scheme(byte, offset):
+		i = offset % 8
+		byte = byte + i
+		byte = dynabyte.RotateRight(byte, i)
+		byte = byte ^ encrypted_header[i]
+		return byte
 
-    keysolve.run(reverse_decryption_scheme) # Run normal header through callback function
-    # Print the output in string, decimal, C-style array, and python list formats
-    keysolve.printbytes(format="string")
-    keysolve.printbytes(delim=" ")
-    keysolve.printbytes(format="C")
-    keysolve.printbytes(format="Python")
-    key = keysolve.array # Save the key
+	keysolve = dynabyte.load([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]) # Load the first 8 bytes of a normal PNG header
+	key = keysolve.run(reverse_decryption_scheme).array
 
 
 2. Decrypting the files
@@ -44,29 +36,33 @@ Since we now have the original key, we can implement the original decryption sch
 
 .. code-block:: python
 
-    encrypted_dir = r"C:\Users\IEUser\Desktop\Files"
-    for filename in os.listdir(encrypted_dir):
-        input_path = os.path.join(encrypted_dir, filename)
-        output_path = os.path.splitext(input_path)[0] # Strip .encrypted from file name
+    for filename in os.listdir(r"C:\Users\IEUser\Desktop\Files"):
+		input_path = os.path.join(r"C:\Users\IEUser\Desktop\Files", filename)
+		output_path = os.path.splitext(input_path)[0] # Strip .encrypted from file name
     
-        # Ugly 1 liner to decrypt file (just to demonstrate its possible)
-        dynabyte.loadfile(input_path, output_path).run(lambda byte, offset : dynabyte.RotateLeft(byte ^ key[offset % 8], offset % 8) - offset % 8)
-        dynabyte.deletefile(input_path) # delete the encrypted file
-    
-    end_time = time.time() - start_time
-    print("\nKey found and files decrypted - {:.2f}s".format(end_time))
+		enc_file = dynabyte.load(input_path, file=True)
+		# Run the operations in reverse, delete encrypted file
+		enc_file.run(lambda byte, offset : dynabyte.RotateLeft(byte ^ key[offset % 8], offset % 8) - offset % 8, output=output_path).delete()
+		
+	print("Key: ", end="")
+	keysolve.print("string")
+	keysolve.print()
+	keysolve.print("c")
+	keysolve.print("list")
+	print("\nFiles decrypted")
 
 
 Output:
 
 .. code-block:: console
 
-    No1Trust
+    Key: No1Trust
     0x4e, 0x6f, 0x31, 0x54, 0x72, 0x75, 0x73, 0x74
-    byteArray = { 0x4e, 0x6f, 0x31, 0x54, 0x72, 0x75, 0x73, 0x74 };
+    unsigned char byteArray[] = { 0x4e, 0x6f, 0x31, 0x54, 0x72, 0x75, 0x73, 0x74 };
     byteArray = [0x4e, 0x6f, 0x31, 0x54, 0x72, 0x75, 0x73, 0x74]
+	
+	Files decrypted
 
-    Key found and files decrypted - 0.06s
 
 The key is derived and the files are decrypted in less than a second. The flag can now be found in critical_data.txt.
 
