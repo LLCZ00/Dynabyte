@@ -1,2 +1,2 @@
-from .core import loadfile, loadarray
+from .core import load
 from .utils import *
