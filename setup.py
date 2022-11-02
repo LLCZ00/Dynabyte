@@ -7,9 +7,9 @@ with open(os.path.join(this_dir, "README.md"), "r") as file:
 
 setup(
     name="dynabyte",
-    version="1.0.1",
+    version="2.0.0",
     author="LLCZ00",
-    description="Byte manipulation module for files and arrays",
+    description="Byte manipulation tool/module for files and arrays",
     long_description=readme,
     long_description_content_type="text/markdown",
     url="https://github.com/LLCZ00/Dynabyte",
@@ -27,8 +27,13 @@ setup(
         "Topic :: Security :: Cryptography",
         "Topic :: Utilities",
     ],
+    entry_points={
+        "console_scripts": [
+            "dynabyte=dynabyte.main:main"
+        ]
+    },
     python_requires=">=3.8",
     zip_safe=False,
     install_requires=[],
-    packages=find_packages(exclude=["examples"])
+    packages=find_packages()
 )
