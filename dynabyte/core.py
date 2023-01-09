@@ -28,17 +28,32 @@ def load(
     return DynabyteArray(input)
 
 
-class BuiltIns:
-    """Base class, mainly for built-in bit-wise operation methods"""
+class OpMixIn:
+    """Mixin class for built-in bit-wise operation methods
+    """
     buffersize = 8192
         
     def run(self, callback, *, output=None, count=1):
-        """Execute operations defined in a callback function upon data. Gives access to offset."""
+        """Execute operations defined in a callback function upon data. Gives access to offset.
+        
+        Must be overriden by subclass
+        
+        :param callback: Callback function: func(byte, offset) -> byte
+        :param output: Output file path (optional)
+        :type output: str
+        :param count: Number of times to run array though callback function
+        :type count: int
+        """
         raise NotImplementedError
     
-    def XOR(self, value: "int, str, list, bytes, or bytearray" = 0, *, count: int = 1):
+    def XOR(self, value=0, *, count=1):
         """XOR each byte of the current instance against 'value', 'count' times
+        
         Providing a value of any type other than int will result in it being used as a key
+        
+        :param value: Value to XOR array against (int, str, list, bytes, or bytearray)
+        :param count: Number of times to XOR array against value
+        :type count: int
         """
         if type(value) is int:
             return self.run(callback=lambda x, y: x ^ value, count=count)
@@ -46,66 +61,95 @@ class BuiltIns:
             key = utils.getbytearray(value)
             return self.run(callback=lambda x, y: x ^ key[y % len(key)], count=count)
         
-    def SUB(self, value: int = 0, *, count: int = 1):
-        """Subtract 'value' from each byte of the current instance, 'count' times"""
+    def SUB(self, value=0, *, count=1):
+        """Subtract 'value' from each byte of the current instance, 'count' times
+         
+        :param value: Value to subtract from each byte of array
+        :type value: int
+        :param count: Number of times to subtract value from array
+        :type count: int
+        """
         return self.run(callback=lambda x, y: x - value, count=count)
         
-    def ADD(self, value: int = 0, *, count: int = 1):
-        """"Add 'value' to each byte of the current instance, 'count' times"""
+    def ADD(self, value=0, *, count=1):
+        """"Add 'value' to each byte of the current instance, 'count' times
+        
+        :param value: Value to add to each byte of array
+        :type value: int
+        :param count: Number of times to add value to array
+        :type count: int
+        """
         return self.run(callback=lambda x, y: x + value, count=count)
         
-    def ROL(self, value: int = 0, *, count: int = 1):
-        """Circular rotate shift left each byte of the current instance by 'value' bits, 'count' times"""
+    def ROL(self, value=0, *, count=1):
+        """Circular rotate shift left each byte of the current instance by 'value' bits, 'count' times
+        
+        :param value: Number of places to shift array
+        :type value: int
+        :param count: Number of times to run ROL
+        :type count: int
+        """
         return self.run(callback=lambda x, y: utils.RotateLeft(x, value), count=count)
         
-    def ROR(self, value: int = 0, *, count: int = 1):
-        """Circular rotate shift right each byte of the current instance by 'value' bits, 'count' times"""
+    def ROR(self, value=0, *, count=1):
+        """Circular rotate shift right each byte of the current instance by 'value' bits, 'count' times
+        
+        :param value: Number of places to shift array
+        :type value: int
+        :param count: Number of times to run ROR
+        :type count: int
+        """
         return self.run(callback=lambda x, y: utils.RotateRight(x, value), count=count)    
 
 
-class DynabyteArray(BuiltIns):
+class DynabyteArray(OpMixIn):
     """Dynabyte class for interacting with arrays"""
     def __init__(self, input):
         self.array = utils.getbytearray(input)
     
-    def print(
-        self,
-        style: "C, Python, string, or 'raw' array format" = None,
-        delim: "Delimiter between values" = ", ",
-        end: str = "\n") -> None:
-        """Print array of current instance in C-style array, Python list, or hex value (default) formats"""
-        utils.printbytes(self.array, style, delim, end)
+    def __str__(self):
+        return self.format()
+    
+    def format(self, style="string", delim= ", "):
+        """Return string of instance's array data in given format.
         
-    def getdata(self, format=None):
-        """Return current instance's array data in bytearray (default, None), raw bytes, list, or string formats"""
+        C-style array, Python list, delimited hex values,
+        or string (default) formats.
+        
+        :param style: C, Python, string, or 'raw' (None) array format
+        :type style: str
+        :param delim: Delimiter between hex values (Default: ', ')
+        :type delim: str        
+        :rtype: str 
+        """       
         try:
-            format = format.lower()
+            style = style.lower()
         except AttributeError:
             pass
             
-        data = self.array
-        if format == "string":
+        data = delim.join(hex(byte) for byte in self.array)    
+        if style == "c":
+            data = f"unsigned char byte_array[] = {{ {data} }};"
+        elif style == "list":
+            data = f"byte_array = [{data}]"
+        elif style == "string":
             try:
-                data = self.array.decode() 
-            except UnicodeDecodeError:
-                pass
-        if format == "bytes":
-            data = bytes(self.array)
-        elif format == "list":
-            data = list(self.array)
-        else:
-            pass
-            
+                data = self.array.decode()
+            except:
+                pass        
         return data
+                
+    def run(self, callback, *, output=None, count=1):
+        """Execute operations defined in a callback function upon data. 
         
-    def run(
-        self,
-        callback: "Callback function: func(byte, offset) -> byte",
-        *,
-        output: "Optional output file path" = None, 
-        count: "Number of times to run array though callback function" = 1):
-        """Execute operations defined in a callback function upon data. Gives access to offset."""
-
+        Gives access to offset.
+        
+        :param callback: Callback function: func(byte, offset) -> byte
+        :param output: Output file path (optional)
+        :type output: str
+        :param count: Number of times to run array though callback function
+        :type count: int
+        """
         for _ in range(count):
             callback_function = DynabyteCallback(callback)
             self.array = callback_function(self.array)
@@ -116,7 +160,7 @@ class DynabyteArray(BuiltIns):
         return self
         
 
-class DynabyteFile(BuiltIns):
+class DynabyteFile(OpMixIn):
     """Dynabyte class for interacting with files"""
     def __init__(self, input):
         self.path = input
