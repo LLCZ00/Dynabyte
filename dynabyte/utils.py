@@ -30,35 +30,11 @@ def RotateRight(x, n):
     return ((x & 255) >> (n % 8)) | (x << (8 - (n % 8)) & 255)
     
 
-def printbytes( 
-    input: bytearray,
-    style: "C, list, string, or None (default)" = None,
-    delim: str = ", ",
-    end: str = "\n") -> None:
-    """Print array of current instance in C-style array, Python list, or hex value (default) formats"""
-
-    array_string = delim.join(hex(byte) for byte in input)
-    try:
-        style = style.lower()
-    except AttributeError:
-        pass
-    
-    if style == "c":
-        print(f"unsigned char byte_array[] = {{ {array_string} }};", end=end)
-    elif style == "list":
-        print(f"byte_array = [{array_string}]", end=end)
-    elif style == "string":
-        try:
-            print(input.decode(), end=end)
-        except UnicodeDecodeError:
-            print(f"(Could not decode)", end=end)
-    else:
-        print(array_string, end=end)
-        
-
 def getbytearray(input: "str, list, bytes, or bytearray") -> bytearray:
     """Return bytearray from string, list, or bytes objects"""
-    if type(input) is str:
+    if type(input) is type(None):
+        return ""
+    elif type(input) is str:
         return bytearray([ord(c) for c in input])
     elif type(input) is bytearray:
         return input
@@ -88,7 +64,8 @@ def getfilesize(path: str, verbose: bool = False) -> int:
 
 
 def getfilehash(path, hash: str = "sha256", verbose: bool = False) -> str:
-    """Return hash (str) of given file (Default: SHA256)"""
+    """Return hash (str) of given file (Default: SHA256)
+    """
     hash_obj = hashlib.new(hash)
     try:
         with open(path, "rb") as reader:
@@ -107,7 +84,8 @@ def getfilehash(path, hash: str = "sha256", verbose: bool = False) -> str:
 
 
 def comparefilehashes(*paths, hash: str = "sha256", verbose: bool = False):
-    """Compare hashes of 2 or more files (Default: SHA256)"""
+    """Compare hashes of 2 or more files (Default: SHA256)
+    """
     hashes = []
     for path in paths:
         hashes.append(getfilehash(path, hash, verbose))
@@ -122,7 +100,8 @@ def comparefilehashes(*paths, hash: str = "sha256", verbose: bool = False):
     
 
 def comparefilebytes(filepath1: str, filepath2: str, verbose: bool = True) -> bool:
-    """Compare the bytes of the two given files.     
+    """Compare the bytes of the two given files.
+    
     If verbose==True (default) results will be printed to the screen.
     Return: True = no error, False = errors found"""
     name1 = os.path.basename(filepath1)
