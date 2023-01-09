@@ -19,9 +19,10 @@ import sys
 import argparse
 import dynabyte.core as core
 import dynabyte.utils as utils
+from dynabyte import version
 
 _NAME = "dynabyte"
-_VERSION = "2.0.0"
+_VERSION = __version__
 _AUTHOR = "LLCZ00"
 _DESCRIPTION = f"""{_NAME} {_VERSION}, by {_AUTHOR}
 CLI tool and Python module designed to streamline the process of de-obfuscating data.
