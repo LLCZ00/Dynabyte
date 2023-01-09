@@ -1,13 +1,16 @@
 import os
 from setuptools import setup, find_packages
 
+with open(os.path.join("omniserver", "version.py"), "r") as vfile:
+    exec(vfile.read())
+    
 this_dir = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(this_dir, "README.md"), "r") as file:
     readme = file.read()
 
 setup(
     name="dynabyte",
-    version="2.0.0",
+    version=__version__,
     author="LLCZ00",
     description="Byte manipulation tool/module for files and arrays",
     long_description=readme,
