@@ -3,62 +3,60 @@ Core
 
 Classes and functions providing the core functionality of Dynabyte
 
-Main Function
--------------
-The main functions by which to interact with the classes
-
-.. autofunction:: dynabyte.load(input: "Input array (str, bytearray, list, or bytes) or file path", file: "Specify string as a filepath" = False)
-
-
 Classes
 -------
 
-BuiltIns
-^^^^^^^^^^^^^^^^^^^^^
+OperatorMixIn
+^^^^^^^^^^^^^
+Base class for dynabyte.Array and dynabyte.File, provides methods for using bit-wise operations. It also overrides their respective 'magic methods' so they can be used with simple binary operators (^, + , -, etc.)
 
-Base class, functions are inherited by DynabyteArray and DynabyteFile
+.. autofunction:: dynabyte.core.OperatorMixIn
 
-.. autofunction:: dynabyte.core.BuiltIns.XOR(self, value: "int, str, list, bytes, or bytearray" = 0, *, count: int = 1)
+.. autofunction:: dynabyte.core.OperatorMixIn.XOR
 
-.. autofunction:: dynabyte.core.BuiltIns.SUB(self, value: int = 0, *, count: int = 1)
+.. autofunction:: dynabyte.core.OperatorMixIn.SUB
 
-.. autofunction:: dynabyte.core.BuiltIns.ADD(self, value: int = 0, *, count: int = 1)
+.. autofunction:: dynabyte.core.OperatorMixIn.ADD
 
-.. autofunction:: dynabyte.core.BuiltIns.ROL(self, value: int = 0, *, count: int = 1)
+.. autofunction:: dynabyte.core.OperatorMixIn.ROL
 
-.. autofunction:: dynabyte.core.BuiltIns.ROR(self, value: int = 0, *, count: int = 1)
+.. autofunction:: dynabyte.core.OperatorMixIn.ROR
 
-DynabyteArray
-^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: dynabyte.core.DynabyteArray(input)
+Array
+^^^^^
+.. autofunction:: dynabyte.core.Array
 
-.. autofunction:: dynabyte.core.DynabyteArray.run(self, callback: "Callback function: func(byte, offset) -> byte", *, output: "Optional output file path" = None, count: "Number of times to run array though callback function" = 1)
+.. autofunction:: dynabyte.core.Array.run
 
-.. autofunction:: dynabyte.core.DynabyteArray.getdata(self, format=None)
+.. autofunction:: dynabyte.core.Array.format
 
-.. autofunction:: dynabyte.core.DynabyteArray.print(self, style: "C, Python, string, or 'raw' array format" = None, delim: "Delimiter between values" = ", ", end: str = "\n")
+.. autofunction:: dynabyte.core.Array.bytes
 
-DynabyteFile
-^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: dynabyte.core.DynabyteFile(path: str, output: str, buffersize: int)
+File
+^^^^
+.. autofunction:: dynabyte.core.File
 
-.. autofunction:: dynabyte.core.DynabyteFile.run(self, callback: "Callback function: func(byte, offset) -> byte", *, output: "Optional output file path" = None, count: "Number of times to run array though callback function" = 1)
+.. autofunction:: dynabyte.core.File.run
 
-.. autofunction:: dynabyte.core.DynabyteFile.getsize(self, verbose: bool = False)
+.. autofunction:: dynabyte.core.File.getfilebytes
 
-.. autofunction:: dynabyte.core.DynabyteFile.gethash(self, hash: str = "sha256", verbose: bool = False)
+.. autofunction:: dynabyte.core.File.getsize
 
-.. autofunction:: dynabyte.core.DynabyteFile.delete(self)
+.. autofunction:: dynabyte.core.File.gethash
+
+.. autofunction:: dynabyte.core.File.delete
 
 
-DynabyteCallback
-^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: dynabyte.core.DynabyteCallback(function)
+Built-in Operations
+-------------------
+These functions do not belong to any dynabyte classes, and simply return the byte representation of their results
 
-.. autofunction:: dynabyte.core.DynabyteCallback.__call__(self, chunk: bytes)
+.. autofunction:: dynabyte.ops.XOR
 
-DynabyteFileManager
-^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: dynabyte.core.DynabyteFileManager(input: str, output: str, buffersize: int))
+.. autofunction:: dynabyte.ops.SUB
 
-.. autofunction:: dynabyte.core.DynabyteFileManager.write(chunk: bytes)
+.. autofunction:: dynabyte.ops.ADD
+
+.. autofunction:: dynabyte.ops.ROL
+
+.. autofunction:: dynabyte.ops.ROR

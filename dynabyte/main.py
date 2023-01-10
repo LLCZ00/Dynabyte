@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2022 LLCZ00
+# Copyright (C) 2023 LLCZ00
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -22,9 +22,7 @@ import dynabyte.utils as utils
 from dynabyte import version
 
 _NAME = "dynabyte"
-_VERSION = __version__
-_AUTHOR = "LLCZ00"
-_DESCRIPTION = f"""{_NAME} {_VERSION}, by {_AUTHOR}
+_DESCRIPTION = f"""{_NAME} {__version__}, by LLCZ00
 CLI tool and Python module designed to streamline the process of de-obfuscating data.
 """
 
@@ -85,15 +83,21 @@ class KeyConverter(argparse.Action):
         except:
             parser.error(f"String conversion error '{key}'")               
         setattr(namespace, self.dest, key)
-        
-        
-def main():
+
+
+def parse_arguments():
     parser = DynabyteParser(
     prog=_NAME,
     formatter_class=argparse.RawDescriptionHelpFormatter,
     description=_DESCRIPTION,
     epilog=f"Examples:\n\t{_NAME} --string plaintext xor 56 sub 12\n\t{_NAME} -f sus.bin -o sus.exe --xor 'password' add 0x12\n\t{_NAME} --hex 0x1b,0x52,0xa,0x18,0x44,0x16,0x19,0x57 --xor k3y"
     )
+    parser.add_argument(
+        '--version',
+        action='version',
+        version=f'Dynabyte {__version__}',
+        help='Show version number and exit'
+    ) 
     parser.add_argument(
         '-s', '--string', 
         metavar='INPUT',
@@ -176,6 +180,11 @@ def main():
         
     if args.array and args.filepath:
         parser.error("More than one input method chosen.")
+        
+    return args
+        
+def main():
+    args = parse_arguments()
     
     """
     Create dynabyte instance from either filepath or array/string
@@ -183,9 +192,9 @@ def main():
 
     file = False
     if args.array:
-        db_obj = core.load(args.array)
+        db_obj = core.Array(args.array)
     elif args.filepath and not args.array:
-        db_obj = core.load(args.filepath, file=True)
+        db_obj = core.File(args.filepath, file=True)
         file = True
     
     """

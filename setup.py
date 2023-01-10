@@ -1,7 +1,7 @@
 import os
 from setuptools import setup, find_packages
 
-with open(os.path.join("omniserver", "version.py"), "r") as vfile:
+with open(os.path.join("dynabyte", "version.py"), "r") as vfile:
     exec(vfile.read())
     
 this_dir = os.path.abspath(os.path.dirname(__file__))

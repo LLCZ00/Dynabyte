@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2022 LLCZ00
+# Copyright (C) 2023 LLCZ00
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -16,19 +16,11 @@ dynabyte.core
 - Classes providing the core functionality of Dynabyte
 """
 
-import dynabyte.utils as utils
+from dynabyte import utils
 
+    
 
-def load(
-    input: "Input array (str, bytearray, list, or bytes) or file path",
-    file: "Specify string as a filepath" = False):
-    """Return instance of DynabyteArray or DynabyteFile"""
-    if file:
-        return DynabyteFile(input)
-    return DynabyteArray(input)
-
-
-class OpMixIn:
+class OperatorMixIn:
     """Mixin class for built-in bit-wise operation methods
     """
     buffersize = 8192
@@ -49,17 +41,18 @@ class OpMixIn:
     def XOR(self, value=0, *, count=1):
         """XOR each byte of the current instance against 'value', 'count' times
         
-        Providing a value of any type other than int will result in it being used as a key
+        If value is anything other than int, data will be XOR'd against
+        the value sequentially (like a key).
         
         :param value: Value to XOR array against (int, str, list, bytes, or bytearray)
         :param count: Number of times to XOR array against value
         :type count: int
         """
-        if type(value) is int:
-            return self.run(callback=lambda x, y: x ^ value, count=count)
-        else:
-            key = utils.getbytearray(value)
-            return self.run(callback=lambda x, y: x ^ key[y % len(key)], count=count)
+        key = utils.getbytearray(value)
+        return self.run(callback=lambda x, y: x ^ key[y % len(key)], count=count)
+        
+    def __xor__(self, value):
+        return self.XOR(value)
         
     def SUB(self, value=0, *, count=1):
         """Subtract 'value' from each byte of the current instance, 'count' times
@@ -71,6 +64,9 @@ class OpMixIn:
         """
         return self.run(callback=lambda x, y: x - value, count=count)
         
+    def __sub__(self, value):
+        return self.SUB(value)
+        
     def ADD(self, value=0, *, count=1):
         """"Add 'value' to each byte of the current instance, 'count' times
         
@@ -81,6 +77,9 @@ class OpMixIn:
         """
         return self.run(callback=lambda x, y: x + value, count=count)
         
+    def __add__(self, value):
+        return self.ADD(value)
+        
     def ROL(self, value=0, *, count=1):
         """Circular rotate shift left each byte of the current instance by 'value' bits, 'count' times
         
@@ -89,7 +88,10 @@ class OpMixIn:
         :param count: Number of times to run ROL
         :type count: int
         """
-        return self.run(callback=lambda x, y: utils.RotateLeft(x, value), count=count)
+        return self.run(callback=lambda x, y: ((x << value % 8) & 255) | ((x & 255) >> (8 - (value % 8))), count=count)
+        
+    def __lshift__(self, value):
+        return self.ROL(value)
         
     def ROR(self, value=0, *, count=1):
         """Circular rotate shift right each byte of the current instance by 'value' bits, 'count' times
@@ -99,24 +101,30 @@ class OpMixIn:
         :param count: Number of times to run ROR
         :type count: int
         """
-        return self.run(callback=lambda x, y: utils.RotateRight(x, value), count=count)    
+        return self.run(callback=lambda x, y: ((x & 255) >> (value % 8)) | (x << (8 - (value % 8)) & 255), count=count)
+        
+    def __rshift__(self, value):
+        return self.ROR(value)
 
 
-class DynabyteArray(OpMixIn):
-    """Dynabyte class for interacting with arrays"""
-    def __init__(self, input):
-        self.array = utils.getbytearray(input)
+class Array(OperatorMixIn):
+    """Dynabyte class for interacting with arrays
+    
+    For use with string/list/byte/bytearray objects
+    """
+    def __init__(self, data):
+        self.data = utils.getbytearray(data)
     
     def __str__(self):
         return self.format()
-    
+        
     def format(self, style="string", delim= ", "):
         """Return string of instance's array data in given format.
         
         C-style array, Python list, delimited hex values,
         or string (default) formats.
         
-        :param style: C, Python, string, or 'raw' (None) array format
+        :param style: C, list, string, or None (hex bytes) array format
         :type style: str
         :param delim: Delimiter between hex values (Default: ', ')
         :type delim: str        
@@ -125,19 +133,23 @@ class DynabyteArray(OpMixIn):
         try:
             style = style.lower()
         except AttributeError:
-            pass
-            
-        data = delim.join(hex(byte) for byte in self.array)    
+            pass           
+        array = delim.join(hex(byte) for byte in self.data)    
         if style == "c":
-            data = f"unsigned char byte_array[] = {{ {data} }};"
+            array = f"unsigned char byte_array[] = {{ {array} }};"
         elif style == "list":
-            data = f"byte_array = [{data}]"
+            array = f"byte_array = [{array}]"
         elif style == "string":
             try:
-                data = self.array.decode()
+                array = self.data.decode()
             except:
                 pass        
-        return data
+        return array
+        
+    def bytes(self):
+        """Return bytes-object from instance's data
+        """
+        return bytes(self.data)
                 
     def run(self, callback, *, output=None, count=1):
         """Execute operations defined in a callback function upon data. 
@@ -151,31 +163,80 @@ class DynabyteArray(OpMixIn):
         :type count: int
         """
         for _ in range(count):
-            callback_function = DynabyteCallback(callback)
-            self.array = callback_function(self.array)
+            self.data = DynabyteCallback(callback)(self.data)
         if output:
             with open(output, 'wb') as file:
-                file.write(self.array)
-        self.array = bytearray(self.array)
+                file.write(self.data)
+        self.data = bytearray(self.data)
         return self
         
 
-class DynabyteFile(OpMixIn):
+class File(OperatorMixIn):
     """Dynabyte class for interacting with files"""
-    def __init__(self, input):
-        self.path = input
+    def __init__(self, path):
+        self.path = path
         
-    def getsize(self, verbose: bool = False) -> int:
-        """Return size of current DynabyteFile instance file in bytes"""
-        return utils.getfilesize(self.path, verbose)
+    def __str__(self):
+        return self.path
+        
+    def getsize(self, verbose=False):
+        """Return size of current instance file in bytes
+        
+        :param verbose: Print filesize message
+        :type verbose: bool
+        """
+        size = os.stat(self.path).st_size
+        if verbose:
+            print(f"{os.path.basename(self.path)}: {size:,} bytes")
+        return size
 
-    def gethash(self, hash: str = "sha256", verbose: bool = False) -> str:
-        """Return hash of current DynabyteFile instance file (Default: SHA256)"""
-        return utils.getfilehash(self.path, hash, verbose)
+    def gethash(self, hash="sha256", verbose=False):
+        """Return hash of current instance file
+        
+        :param hash: Hash type (Default: sha256)
+        :type hash: str
+        :param verbose: Print filesize message
+        :type verbose: bool
+        :rtype: str
+        """
+        hash_obj = hashlib.new(hash)
+        try:
+            with open(self.path, "rb") as reader:
+                chunk = reader.read(8192)
+                while chunk:
+                    hash_obj.update(chunk)
+                    chunk = reader.read(8192)
+        except FileNotFoundError:
+            if verbose:
+                print(f"File not found: '{self.path}'")
+            return None
+            
+        if verbose:
+            print(f"{os.path.basename(self.path)} - {hash}: {hash_obj.hexdigest()}")
+        return hash_obj.hexdigest()
         
     def delete(self):
         """Delete input file"""
-        return utils.deletefile(self.path)
+        if os.path.exists(self.path):
+            os.remove(self.path)
+        
+    def getfilebytes(self, buffer=-1):
+        """Return all bytes from file in dynabyte Array
+        
+        Beware hella large files
+        
+        :param buffer: Number of bytes to read from file (Default: all)
+        :type buffer: int
+        :returns Array: Array object initialized with file bytes
+        :rtype dynabyte.core.Array:
+        """
+        data = None
+        try:
+            with open(self.path, "rb") as fileobj:
+                data = Array(file.read(buffer))
+        except FileNotFoundError:
+            pass
+        return data 
         
     def run(
         self,
@@ -183,9 +244,16 @@ class DynabyteFile(OpMixIn):
         *,
         output: "Optional output file path" = None,
         count: "Number of times to run array though callback function" = 1) -> object:
-        """Execute operations defined in a callback function upon data. Gives access to offset.
-        Returns self, or instance created from output file"""
+        """Execute operations defined in a callback function upon data within given file. 
         
+        Gives access to offset, returns self, or instance created from output file
+        
+        :param callback: Callback function: func(byte, offset) -> byte
+        :param output: Output file path (optional)
+        :type output: str
+        :param count: Number of times to run file though callback function
+        :type count: int
+        """       
         input = self.path # Running count > 1 and outputting a file at the same time breaks if I don't do this
         for _ in range(count):
             callback_function = DynabyteCallback(callback)
@@ -200,6 +268,7 @@ class DynabyteFile(OpMixIn):
 
 class DynabyteFileManager:
     """Context manager for file objects, can be iterated over to retrieve buffer of file bytes.
+    
     Handles the input/output of one or two files.
     If no output path is given, the input will be overwritten
     """
@@ -247,8 +316,7 @@ class DynabyteCallback:
         
     def __call__(self, chunk: bytes) -> bytes:
         """Returns bytes after being processed through callback function"""
-        chunk_length = len(chunk)
-        buffer = bytearray(chunk_length)
+        buffer = bytearray(len(chunk))
         for chunk_offset, byte in enumerate(chunk):
             buffer[chunk_offset] = (self.callback(byte, self.global_offset) & 0xff)
             self.global_offset += 1

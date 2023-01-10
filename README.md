@@ -56,29 +56,47 @@ pa$$w0rd!
 ```
 A dynabyte callback function (see below) is dynamically generated to perform the command, and can be acceptably copy/pasted into script using the dynabyte module, if one were so incline.
 ### Module
-De-obfuscating a string:
+Obfuscating and de-obfuscating a string:
 ```py
-import dynabyte
+import dynabyte as dyna
 
-obf_string = dynabyte.load("\osb`pnarq-`a_v{t")
-obf_string.ADD(3).XOR(0x10) # Add 3 to each byte, then XOR each byte by 0x10
-obf_string.print(style="string") # Output: "Obfuscated string"
+obf_string = dyna.Array("Pas$$w0rd!")
+obf_string.ROL(0x15).XOR("key").ADD(0xA) # Rotate left 0x15 bytes, xor against "key", add 0xA
+print(obf_string) # "0x6b, 0x53, 0x21, 0xf9, 0xeb, 0xa1, 0x77, 0x35, 0xff, 0x59"
+
+obf_string.SUB(0xA).XOR("key").ROR(0x15) # Perform operations in reverse
+print(obf_string) # "Pas$$w0rd!"
+```
+This example can also be accomplished using typical binary operators:
+```py
+from dynabyte import Array
+
+mystr = ((Array("Pas$$w0rd!") << 0x15) ^ "key") + 0xA
+print(mystr.format("list")) # "byte_array = [0x6b, 0x53, 0x7, 0xf9, 0x95, 0x89, 0x2f, 0xf3, 0x67]""
+
+mystr = ((mystr - 0xA) ^ "key") >> 0x15
+print(mystr) # "Pas$$w0rd!"
 ```
 Built-in operation methods (*XOR*, *ADD*, *SUB*, *ROL*, *ROR*) can be used on both files and strings, the order of execution being left to right. 
 
-*XOR* can also used to encode/decode against a key:
+The built-in operations can also be used directly from *dynabyte.ops*, without creating a *dynabyte.File* instance:
 ```py
-import dynabyte as db
+from dynabyte.ops import *
 
-mystr = db.load([0x1b, 0x52, 0xa, 0x18, 0x44, 0x16, 0x19, 0x57]) # Encoded bytes from CLI example
-mystr.ROL(3).ADD(5).XOR("mr.pib")
-mystr.print("string") # Output: "pa$$w0rd!"
+string = "shmebulock"
+encoded = XOR(SUB(ROL(string, 3), 12), 0xC)
+decoded = ROR(ADD(XOR(encoded, 0xC), 12), 3)
+
+print(encoded) # b'\x83;S\x13\x0b\x93[c\x03C'
+print(decoded.decode()) # "shmebulock"
 ```
+The functions in *dynabyte.ops* return the bytes of the processed input, unlike the dynabyte objects which return their own instance.
+
 Custom callback functions can be used to execute operations with the *run()* method. This is generally more efficient for longer operations, and is recommended for files. Using callback functions also gives you access to the "global" offset of a particular byte, as well as the option to write the results to a new file.
 
 Callback Signature:
 ```py
-def callback(byte: bytes, offset: int): -> bytes
+def callback(byte: bytes, offset: int) -> bytes:
     return byte
 ```
 Encrypting/decrypting a file: 
@@ -87,7 +105,7 @@ import dynabyte
 
 key = b"bada BING!"
 callback = lambda byte, offset: (byte ^ key[offset % len(key)]) + 0xc # Callbacks can be lambdas or regular functions
-myfile = dynabyte.load(r"C:\Users\IEUser\suspicious.bin")
+myfile = dynabyte.File(r"C:\Users\IEUser\suspicious.bin")
 # Run file through callback function twice, encrypting file
 myfile.run(callback, count=2) 
 # Decrypt file by reversing the operations, output to file
@@ -105,3 +123,4 @@ pip install dynabyte
     - Switching to numpy arrays (instead of bytearrays) and integrating them with Cython
     - Rewriting file IO functionality in C and wrapping them
 - Add support for common encryption schemes (AES) and alternative encodings (Base64)
+- Remove utils.RotateLeft and utils.RotateRight, find workaround for this in arg parsing for CLI tool
