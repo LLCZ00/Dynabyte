@@ -8,6 +8,8 @@ Dynabyte's helper/utility functions
 
 .. autofunction:: dynabyte.utils.bprint
 
+.. autofunction:: dynabyte.utils.random_key
+
 .. autofunction:: dynabyte.utils.comparefilebytes
 
 .. autofunction:: dynabyte.utils.RotateLeft

@@ -6,21 +6,21 @@ Classes and functions providing the core functionality of Dynabyte
 Classes
 -------
 
-OperatorMixIn
+DynabyteBase
 ^^^^^^^^^^^^^
-Base class for dynabyte.Array and dynabyte.File, provides methods for using bit-wise operations. It also overrides their respective 'magic methods' so they can be used with simple binary operators (^, + , -, etc.)
+Base class for dynabyte.Array and dynabyte.File, provides methods for using bit-wise operations and class attributes 'encoding' and 'buffersize'. It also overrides their respective 'magic methods' so they can be used with simple binary operators (^, + , -, etc.)
 
-.. autofunction:: dynabyte.core.OperatorMixIn
+.. autofunction:: dynabyte.core.DynabyteBase
 
-.. autofunction:: dynabyte.core.OperatorMixIn.XOR
+.. autofunction:: dynabyte.core.DynabyteBase.XOR
 
-.. autofunction:: dynabyte.core.OperatorMixIn.SUB
+.. autofunction:: dynabyte.core.DynabyteBase.SUB
 
-.. autofunction:: dynabyte.core.OperatorMixIn.ADD
+.. autofunction:: dynabyte.core.DynabyteBase.ADD
 
-.. autofunction:: dynabyte.core.OperatorMixIn.ROL
+.. autofunction:: dynabyte.core.DynabyteBase.ROL
 
-.. autofunction:: dynabyte.core.OperatorMixIn.ROR
+.. autofunction:: dynabyte.core.DynabyteBase.ROR
 
 Array
 ^^^^^
