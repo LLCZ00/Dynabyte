@@ -2,8 +2,6 @@
 ### _Simplifying Byte Operations_
 Dynabyte is a python module and CLI tool designed to streamline the process of de-obfuscating data, allowing you to perform bit-wise operations on strings or files with as little code as possible.
 ## Basic Usage
-See [*documentation*](https://dynabyte.readthedocs.io/en/latest/)
-
 Dynabyte can be used as a command line tool, or imported as a module for finer control over data and operations.
 ### CLI
 ```
@@ -56,11 +54,13 @@ pa$$w0rd!
 ```
 A dynabyte callback function (see below) is dynamically generated to perform the command, and can be acceptably copy/pasted into script using the dynabyte module, if one were so incline.
 ### Module
+See [*documentation*](https://dynabyte.readthedocs.io/en/latest/)
+
 Obfuscating and de-obfuscating a string:
 ```py
-import dynabyte as dyna
+import dynabyte
 
-obf_string = dyna.Array("Pas$$w0rd!")
+obf_string = dynabyte.Array("Pas$$w0rd!")
 obf_string.ROL(0x15).XOR("key").ADD(0xA) # Rotate left 0x15 bytes, xor against "key", add 0xA
 print(obf_string) # "0x6b, 0x53, 0x21, 0xf9, 0xeb, 0xa1, 0x77, 0x35, 0xff, 0x59"
 
@@ -71,15 +71,15 @@ This example can also be accomplished using typical binary operators:
 ```py
 from dynabyte import Array
 
-mystr = ((Array("Pas$$w0rd!") << 0x15) ^ "key") + 0xA
-print(mystr.format("list")) # "byte_array = [0x6b, 0x53, 0x7, 0xf9, 0x95, 0x89, 0x2f, 0xf3, 0x67]""
+encoded_str = ((Array("Pas$$w0rd!") << 0x15) ^ "key") + 0xA	
+decoded_str = ((Array(encoded_str) - 0xA) ^ "key") >> 0x15
 
-mystr = ((mystr - 0xA) ^ "key") >> 0x15
-print(mystr) # "Pas$$w0rd!"
+print(encoded_str.format("list")) # "byte_array = [0x6b, 0x53, 0x21, 0xf9, 0xeb, 0xa1, 0x77, 0x35, 0xff, 0x59]"
+print(decoded_str) # "Pas$$w0rd!"
 ```
 Built-in operation methods (*XOR*, *ADD*, *SUB*, *ROL*, *ROR*) can be used on both files and strings, the order of execution being left to right. 
 
-The built-in operations can also be used directly from *dynabyte.ops*, without creating a *dynabyte.File* instance:
+The built-in operations can also be used directly, without creating a *dynabyte* File or Array instance:
 ```py
 from dynabyte.ops import *
 
