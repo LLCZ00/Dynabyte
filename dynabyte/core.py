@@ -18,12 +18,17 @@ dynabyte.core
 
 from dynabyte import utils
 
-    
 
-class OperatorMixIn:
-    """Mixin class for built-in bit-wise operation methods
+__all__ = ["Array", "File"]
+
+
+class DynabyteBase:
+    """Base class for dynabyte objects
+    
+    Provides bit-wise operations, and default buffersize and encoding class attributes
     """
     buffersize = 8192
+    encoding="utf-8" # https://docs.python.org/3/library/codecs.html#standard-encodings
         
     def run(self, callback, *, output=None, count=1):
         """Execute operations defined in a callback function upon data. Gives access to offset.
@@ -107,18 +112,21 @@ class OperatorMixIn:
         return self.ROR(value)
 
 
-class Array(OperatorMixIn):
+class Array(DynabyteBase):
     """Dynabyte class for interacting with arrays
     
     For use with string/list/byte/bytearray objects
     """
     def __init__(self, data):
-        self.data = utils.getbytearray(data)
+        if type(data) is type(self): # For accepting data from dynabyte.core.Array objects
+            self.data = data.data
+        else:
+            self.data = utils.getbytearray(data)
     
     def __str__(self):
-        return self.format()
+        return self.format(style="string")
         
-    def format(self, style="string", delim= ", "):
+    def format(self, style=None, delim= ", "):
         """Return string of instance's array data in given format.
         
         C-style array, Python list, delimited hex values,
@@ -140,10 +148,7 @@ class Array(OperatorMixIn):
         elif style == "list":
             array = f"byte_array = [{array}]"
         elif style == "string":
-            try:
-                array = self.data.decode()
-            except:
-                pass        
+            array = self.data.decode(self.encoding, errors='ignore')
         return array
         
     def bytes(self):
@@ -171,7 +176,7 @@ class Array(OperatorMixIn):
         return self
         
 
-class File(OperatorMixIn):
+class File(DynabyteBase):
     """Dynabyte class for interacting with files"""
     def __init__(self, path):
         self.path = path

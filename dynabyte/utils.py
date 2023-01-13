@@ -18,6 +18,7 @@ dynabyte.utils
 """
 
 import os
+from random import randint
 
 
 def RotateLeft(x, n):
@@ -33,6 +34,7 @@ def RotateRight(x, n):
 def getbytearray(data):
     """Return bytearray from string, list, bytes, or int objects
     
+    :param data: string, list, bytes, or int objects
     :rtype: bytearray
     """
     if type(data) is type(None):
@@ -49,12 +51,12 @@ def getbytearray(data):
         raise TypeError(data)
         
 
-def bprint(data, style=None, delim=", "):
+def bprint(data, style=None, *, encoding="utf-8", delim=", "):
     """Print given bytes in given format
     
     Default: Comma-deliminated hex representation
     
-    :param data: bytes or bytearray object
+    :param data: string, list, bytes, or int objects
     :param style: C, Python, string, or None (hex bytes) array format
     :type style: str
     :param delim: Delimiter between hex values (Default: ', ')
@@ -64,19 +66,42 @@ def bprint(data, style=None, delim=", "):
     try:
         style = style.lower()
     except AttributeError:
-        pass           
+        pass
+    data = getbytearray(data)
     array = delim.join(hex(byte) for byte in data)    
     if style == "c":
         array = f"unsigned char byte_array[] = {{ {array} }};"
     elif style == "list":
         array = f"byte_array = [{array}]"
     elif style == "string":
-        try:
-            array = self.data.decode()
-        except:
-            pass        
+        array = data.decode(encoding, errors='ignore')
+       
     print(array)
+
+
+def random_key(length=10, lower=33, upper=126, string=True, encoding="utf-8"):
+    """Return random assortment of characters in given length.
     
+    By default, the key will be generated from readable ascii characters.
+    
+    :param length: Length, in characters, of key to return
+    :type length: int
+    :param lower: Lower limit of values to generate (Default: 33/'!')
+    :type lower: int
+    :param lower: Upper limit of values to generate (Default: 126/'~')
+    :type lower: int
+    :param string: Return string representation if True, otherwise return bytes object
+    :type string: bool
+    :param encoding: Encoding scheme for returned string
+    :type encoding: str
+    :rtype: str
+    """
+    key = getbytearray([randint(lower, upper-1) for _ in range(length)])
+    if string:
+        return key.decode(encoding, errors='ignore')
+    return bytes(key)
+    
+
 
 def comparefilebytes(path1, path2, verbose=True):
     """Compare the bytes of the two given files.
