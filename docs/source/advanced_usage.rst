@@ -26,8 +26,9 @@ encrypt the file.
 		byte = byte ^ encrypted_header[i]
 		return byte
 
-	keysolve = dynabyte.Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]) # Load the first 8 bytes of a normal PNG header
-	key = keysolve.run(reverse_decryption_scheme).bytes()
+	# Load the first 8 bytes of a normal PNG header and run callback function
+	keysolve = dynabyte.Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+	key = bytes(keysolve.run(reverse_decryption_scheme, cb_type="offset"))
 
 
 2. Decrypting the files
@@ -42,12 +43,12 @@ Since we now have the original key, we can implement the original decryption sch
     
 		enc_file = dynabyte.File(input_path)
 		# Run the operations in reverse, delete encrypted file
-		enc_file.run(lambda byte, offset : dynabyte.RotateLeft(byte ^ key[offset % 8], offset % 8) - offset % 8, output=output_path).delete()
+		enc_file.run(lambda byte, offset : dynabyte.RotateLeft(byte ^ key[offset % 8], offset % 8) - offset % 8, output=output_path, cb_type='offset').delete()
 		
 	print(f"Key: {keysolve}")
-	print(keysolve.format(None))
-	print(keysolve.format("c"))
-	print(keysolve.format("list"))
+	print(format(keysolve))
+	print(format(keysolve, "c"))
+	print(format(keysolve, "list"))
 	print("\nFiles decrypted")
 
 
