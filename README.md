@@ -1,87 +1,53 @@
 # Dynabyte
 ### _Simplifying Byte Operations_
-Dynabyte is a python module and CLI tool designed to streamline the process of de-obfuscating data, allowing you to perform bit-wise operations on strings or files with as little code as possible.
+Dynabyte is a python module designed to streamline the process of obfuscating and de-obfuscating data, allowing you to quickly perform bit-wise operations on strings or files with as little code as possible.
 ## Basic Usage
-Dynabyte can be used as a command line tool, or imported as a module for finer control over data and operations.
-### CLI
-```
-usage: dynabyte [-h] [-s INPUT] [-x INPUT] [-f INPUT] [-o OUTPUT] [--xor KEY] [--xor-hex KEY] [--order {xor,ops}]
-                [--delim SEP] [--style {c,list,int}]
-                [ops ...]
-positional arguments:
-  ops                   Additional operations to be performed on each input byte, executed from left to right (xor,
-                        add, sub, rol, ror). All values interpreted as hex.
-options:
-  -h, --help            show this help message and exit
-  -s INPUT, --string INPUT
-                        Input string to perform operations on.
-  -x INPUT, --hex-in INPUT
-                        Input hex (comma seperated) to perform operations on.
-  -f INPUT, --file INPUT
-                        Input file to perform operation on.
-  -o OUTPUT, --output OUTPUT
-                        Output file.
-  --xor KEY             Quick XOR; XOR input against given key (string).
-  --xor-hex KEY         Quick XOR; XOR input against given key (comma seperated hex).
-  --order {xor,ops}     Declare if Quick XOR or additional ops are executed first, if both options are being used.
-                        (Default: xor)
-  --delim SEP           Set output hex delimiter. (Default: ',')
-  --style {c,list,int}  Set style to print output bytes. (Default: Comma deliminated hex)
-Examples:
-        dynabyte --string plaintext xor 56 sub 12
-        dynabyte -f sus.bin -o sus.exe --xor 'password' add 0x12
-        dynabyte --hex 0x1b,0x52,0xa,0x18,0x44,0x16,0x19,0x57 --xor k3y
-```
-Encoding/decoding a string:
-```
-$ dynabyte -s pa$$w0rd! --xor "mr.pib" sub 5 ror 3
-Callback function:
-lambda byte, offset: utils.RotateRight(((byte ^ key[offset % 6]) - 5), 3)
-Output bytes:
-0x3,0xc1,0xa0,0xe9,0x23,0xa9,0x43,0x22,0x41
-Output string:
-(Could not decode)
-```
-Any number of additional operations (*xor*, *add*, *sub*, *ror*, *rol*) can be added to the end of the command, to be performed on each byte sequentially from left to right. So to decode the string you just reverse the previous operations:
-```
-$ dynabyte --hex 0x3,0xc1,0xa0,0xe9,0x23,0xa9,0x43,0x22,0x41 --order ops --xor "mr.pib" rol 3 add 5
-Callback function:
-lambda byte, offset: ((utils.RotateLeft(byte, 3)) + 5) ^ key[offset % 6]
-Output bytes:
-0x70,0x61,0x24,0x24,0x77,0x30,0x72,0x64,0x21
-Output string:
-pa$$w0rd!
-```
-A dynabyte callback function (see below) is dynamically generated to perform the command, and can be acceptably copy/pasted into script using the dynabyte module, if one were so incline.
-### Module
 See [*documentation*](https://dynabyte.readthedocs.io/en/latest/)
 
-Obfuscating and de-obfuscating a string:
+### Classes and Built-in Operations
+Dynabyte provides the *File* and *Array* classes for easily performing common operations on files and arrays/strings/bytes/integers, respectively. The built-in methods for both *Array* and *File* objects are *XOR*, *ADD*, *SUB*, *ROL*, *ROR*, *RC4*, *reverse*, *b64encode*, *b64decode*, *AESEncrypt*, and *AESDecrypt*. They can be used individually or chained together into a one-liner, as shown in the example below:
 ```py
 import dynabyte
 
-obf_string = dynabyte.Array("Pas$$w0rd!")
-obf_string.ROL(0x15).XOR("key").ADD(0xA) # Rotate left 0x15 bytes, xor against "key", add 0xA
-print(obf_string) # "0x6b, 0x53, 0x21, 0xf9, 0xeb, 0xa1, 0x77, 0x35, 0xff, 0x59"
+obf_string = dynabyte.Array("Be veeeery quiet, I'm huntin rabbits")
 
-obf_string.SUB(0xA).XOR("key").ROR(0x15) # Perform operations in reverse
-print(obf_string) # "Pas$$w0rd!"
+obf_string.RC4("PassW0rd!") # Operations are executed from left to right when chained
+obf_string.ROR(7)
+obf_string.XOR(["xor", 0xAB, 0x2, 'k', 'e', 'y']) # List inputs can be a mix of any valid input type
+obf_string.SUB(0x1A)
+print(obf_string) # "(Jumbled up string that I can't paste here)"
+
+# Perform previous operations in reverse (executed left to right)
+obf_string.ADD(0x1A).XOR(["xor", 0xAB, 0x2, 'k', 'e', 'y']).ROL(7).RC4("PassW0rd!") 
+print(obf_string) # "Be veeeery quiet, I'm huntin rabbits"
 ```
-This example can also be accomplished using typical binary operators:
+Typical binary operators can be used in place of *XOR*, *ADD*, *SUB*, *ROL*, and *ROR*:
 ```py
 from dynabyte import Array
 
-encoded_str = ((Array("Pas$$w0rd!") << 0x15) ^ "key") + 0xA	
-decoded_str = ((Array(encoded_str) - 0xA) ^ "key") >> 0x15
+encoded_str = ((Array("Pas$$w0rd!").RC4("rc4_key") ^ "xor_key") >> 3) - 0xB
+decoded_str = (((Array(encoded_str) + 0xB) << 3) ^ "xor_key").RC4("rc4_key") # Array can accept other dynabyte Arrays
 
-print(encoded_str.format("list")) # "byte_array = [0x6b, 0x53, 0x21, 0xf9, 0xeb, 0xa1, 0x77, 0x35, 0xff, 0x59]"
+print(list(encoded_str)) # "[129, 163, 101, 60, 61, 55, 241, 196, 46, 61]"
 print(decoded_str) # "Pas$$w0rd!"
 ```
-Built-in operation methods (*XOR*, *ADD*, *SUB*, *ROL*, *ROR*) can be used on both files and strings, the order of execution being left to right. 
-
-The built-in operations can also be used directly, without creating a *dynabyte* File or Array instance:
+As shown in the previous example, Array objects will decode their data from bytes to a string when printed or passed to str(). They're also iterable, and can be converted using bytes() or list() functions. For copy/pasting convenience, Arrays can be passed to the format() function to return a Python list, C-style array, or string of raw delimited values. File objects simply return their filepath when printed.
 ```py
-from dynabyte.ops import *
+from dynabyte import Array
+
+mystr = Array("Jambalaya", encoding="UTF-16LE") # Set alternate encoding
+
+print(mystr) # 'Jambalaya'
+print(format(mystr, "list")) # 'byte_array = [0x4a, 0x0, 0x61, ... 0x0, 0x61, 0x0]'
+print(format(mystr, "c")) # 'unsigned char byte_array[] = { 0x4a, 0x0, 0x61, ... 0x0, 0x61, 0x0 };'
+
+mystr.delim = " " # Default: ", "
+mystr.hex = False # Print values as base10 instead of base16
+print(format(mystr)) # '74 0 97 0 109 0 98 0 97 0 108 0 97 0 121 0 97 0'
+```
+The built-in operations can also be used directly on string, integer, byte, and bytearray objects without creating an *Array* instance. The standalone functions return bytes objects, and are slighly more efficient than calling the methods an an *Array* object (possibly at the cost of some readability).
+```py
+from dynabyte.operations import *
 
 string = "shmebulock"
 encoded = XOR(SUB(ROL(string, 3), 12), 0xC)
@@ -90,26 +56,39 @@ decoded = ROR(ADD(XOR(encoded, 0xC), 12), 3)
 print(encoded) # b'\x83;S\x13\x0b\x93[c\x03C'
 print(decoded.decode()) # "shmebulock"
 ```
-The functions in *dynabyte.ops* return the bytes of the processed input, unlike the dynabyte objects which return their own instance.
+Reference the [*Classes*](https://dynabyte.readthedocs.io/en/latest/core_functions.html#classes) section of the documentation for more information on the built-in methods, as well as methods unique to *Array* and *File* objects.
 
-Custom callback functions can be used to execute operations with the *run()* method. This is generally more efficient for longer operations, and is recommended for files. Using callback functions also gives you access to the "global" offset of a particular byte, as well as the option to write the results to a new file.
+### Callback Functions
+Using the *run()* method, callback functions can be used to execute custom operations on the data of *Array* and *File* objects. This is generally more efficient for longer operations, and is recommended for files. There are two "types" of callback functions, *full* and *offset*.
 
-Callback Signature:
+FullCallback Signature:
 ```py
-def callback(byte: bytes, offset: int) -> bytes:
+def callback(data: bytes) -> bytes:
+    return data
+```
+FullCallback functions (the default type) accept and return all the input data (in bytes) at once, giving the function complete control over the whole data set. File objects read data from the input file, and subsequently pass it to the callback function, in chunks determined by the buffersize, so be aware of that if working with files greater than 8192 bytes. The buffersize can adjusted as needed when initializing the *File* object, or *getbytes()* can be called to create an *Array* object with the file's data.
+
+OffsetCallback Signature:
+```py
+def callback(byte: bytes, offset: int) -> int:
     return byte
 ```
-Encrypting/decrypting a file: 
+OffsetCallback functions accept and return one byte at a time, and provides the byte's within the entirety of the data. Offset callback functions are given to a wrapper class which handles converting and 'normalizing' the bytes, which sometimes need to be "AND 0xFF'd" to avoid encoding/decoding errors. Pass cb_type='offset' to *run()* to indicate an OffsetCallback.
+
+Encrypting/decrypting a file using an offset callback function: 
 ```py
 import dynabyte
 
+myfile = dynabyte.File(r"C:\Users\IEUser\suspicious.bin")
+	
 key = b"bada BING!"
 callback = lambda byte, offset: (byte ^ key[offset % len(key)]) + 0xc # Callbacks can be lambdas or regular functions
-myfile = dynabyte.File(r"C:\Users\IEUser\suspicious.bin")
+
 # Run file through callback function twice, encrypting file
-myfile.run(callback, count=2) 
+myfile.run(callback, cb_type='offset', count=2) # Run data through callback twice
+
 # Decrypt file by reversing the operations, output to file
-myfile.run(lambda byte, offset: (byte - 0xc) ^ key[offset % len(key)], count=2, output="sus_copy.bin") 
+myfile.run(lambda byte, offset: (byte - 0xc) ^ key[offset % len(key)], count=2, cb_type='offset', output="sus_copy.bin") 
 ```
 ## Installation
 
@@ -118,9 +97,10 @@ Install from PyPI
 pip install dynabyte
 ```
 ## Known Issues & TODO
+- Expand AES
+- Add RSA
 - Processing speed of larger files could possibly be improved. Things to try:
     - Migrating all file IO and byte processing into Cython
     - Switching to numpy arrays (instead of bytearrays) and integrating them with Cython
     - Rewriting file IO functionality in C and wrapping them
-- Add support for common encryption schemes (AES) and alternative encodings (Base64)
-- Remove utils.RotateLeft and utils.RotateRight, find workaround for this in arg parsing for CLI tool
+
