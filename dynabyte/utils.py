@@ -14,52 +14,58 @@
 dynabyte.utils
 
 - Dynabytes utility/helper functions. 
-- Also useful for general file IO.
 """
 
 import os
 from random import randint
 
 
-def RotateLeft(x, n):
-    """Circular rotate shift x left by n bits"""
-    return ((x << n % 8) & 255) | ((x & 255) >> (8 - (n % 8)))
-
-
-def RotateRight(x, n):
-    """Circular rotate shift x right by n bits"""
-    return ((x & 255) >> (n % 8)) | (x << (8 - (n % 8)) & 255)
+def getbytearray(data, encoding="utf-8"):
+    """Convert string, list, bytes, or int objects to bytearray
     
-
-def getbytearray(data):
-    """Return bytearray from string, list, bytes, or int objects
+    List-type input data can be a combination of any
+    valid input type (int, str, list, byte, bytearray).
+    Strings will be encoded using the given codec.
     
     :param data: string, list, bytes, or int objects
+    :param encoding: Codec to use for encoding if string given
+    :type encoding: str
     :rtype: bytearray
     """
-    if type(data) is type(None):
-        return ""
+    if type(data) is bytearray:
+        return data    
     elif type(data) is str:
-        return bytearray([ord(c) for c in data])    
-    elif type(data) is list or type(data) is bytes:
+        return bytearray(data.encode(encoding))    
+    elif type(data) is bytes:
         return bytearray(data)
     elif type(data) is int:
         return bytearray([data])
-    elif type(data) is bytearray:
-        return data
+    elif type(data) is type(None):
+        return bytearray([])
+    elif type(data) is list:
+        array = bytearray([])
+        for item in data:
+            if type(item) is int:
+                array.append(item)                
+            else:
+                array.extend(getbytearray(item))
+        return array
+    
     else:
         raise TypeError(data)
         
 
 def bprint(data, style=None, *, encoding="utf-8", delim=", "):
-    """Print given bytes in given format
+    """Print data as Python list, C-style array, string, or delimited hex
     
     Default: Comma-deliminated hex representation
     
-    :param data: string, list, bytes, or int objects
-    :param style: C, Python, string, or None (hex bytes) array format
+    :param data: string, list, bytes, bytearray, or int objects
+    :param style: C, list, str, or None (hex bytes) array format
     :type style: str
-    :param delim: Delimiter between hex values (Default: ', ')
+    :param encoding: Codec to decode string with
+    :type encoding: str
+    :param delim: Delimiter between hex values
     :type delim: str
     :rtype: None 
     """
@@ -73,9 +79,8 @@ def bprint(data, style=None, *, encoding="utf-8", delim=", "):
         array = f"unsigned char byte_array[] = {{ {array} }};"
     elif style == "list":
         array = f"byte_array = [{array}]"
-    elif style == "string":
-        array = data.decode(encoding, errors='ignore')
-       
+    elif style == "str":
+        array = data.decode(encoding, errors='ignore')      
     print(array)
 
 
@@ -101,7 +106,6 @@ def random_key(length=10, lower=33, upper=126, string=True, encoding="utf-8"):
         return key.decode(encoding, errors='ignore')
     return bytes(key)
     
-
 
 def comparefilebytes(path1, path2, verbose=True):
     """Compare the bytes of the two given files.
