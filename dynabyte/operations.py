@@ -22,10 +22,9 @@ from Crypto.Cipher import AES
 from dynabyte import utils
 
 
-__all__ = ["ROL", "ROR", "XOR",
-           "ADD", "SUB", "RC4",
-           "AESEncrypt", "AESDecrypt",
-           "reverse"]
+__all__ = ["ROL", "ROR", "XOR","ADD", "SUB", "RC4",
+           "AESEncrypt", "AESDecrypt", "reverse",
+           "RotateLeft", "RotateRight", "pad"]
 
 
 # Helper functions #
@@ -42,7 +41,7 @@ def RotateLeft(x, n):
     :type n: int
     :rtype: int
     """
-    return ((x << n % 8) & 255) | ((x & 255) >> (8 - (n % 8)))
+    return (((x << n % 8) & 255) | ((x & 255) >> (8 - (n % 8)))) & 0xff
 
 
 def RotateRight(x, n):
@@ -57,46 +56,40 @@ def RotateRight(x, n):
     :type n: int
     :rtype: int
     """
-    return ((x & 255) >> (n % 8)) | (x << (8 - (n % 8)) & 255)
+    return (((x & 255) >> (n % 8)) | (x << (8 - (n % 8)) & 255)) & 0xff
 
 
 # Standalone operation functions #
 
-def ROL(data, value=0, *, count=1):
+def ROL(data, value=0):
     """Circular rotate shift 'data' left by 'value' bits
     
     :param data: Data to perform operation on (str, list, bytes, bytearray, int)
     :param value: Number of bits to rotate
     :type value: int
-    :param count: Number of times to perform function
-    :type count: int
     :rtype: bytes
     """
     data = utils.getbytearray(data)
-    for _ in range(count):
-        for offset, byte in enumerate(data):
-            data[offset] = ((((byte << value % 8) & 255) | ((byte & 255) >> (8 - (value % 8)))) & 0xff)        
+    for offset, byte in enumerate(data):
+        data[offset] = ((((byte << value % 8) & 255) | ((byte & 255) >> (8 - (value % 8)))) & 0xff)        
     return bytes(data)
 
 
-def ROR(data, value=0, *, count=1):
+def ROR(data, value=0):
     """Circular rotate shift 'data' right by 'value' bits
     
     :param data: Data to perform operation on (str, list, bytes, bytearray, int)
     :param value: Number of bits to rotate
     :type value: int
-    :param count: Number of times to perform function
-    :type count: int
     :rtype: bytes
     """
     data = utils.getbytearray(data)
-    for _ in range(count):
-        for offset, byte in enumerate(data):
-            data[offset] = ((((byte & 255) >> (value % 8)) | (byte << (8 - (value % 8)) & 255)) & 0xff)        
+    for offset, byte in enumerate(data):
+        data[offset] = ((((byte & 255) >> (value % 8)) | (byte << (8 - (value % 8)) & 255)) & 0xff)        
     return bytes(data)
     
 
-def XOR(data, value=0, *, count=1):
+def XOR(data, value=0):
     """XOR 'data' against 'value', 'count' times
     
     If value is anything other than int, data will be XOR'd against
@@ -104,49 +97,40 @@ def XOR(data, value=0, *, count=1):
      
     :param data: Data to perform operation on (str, list, bytes, bytearray, int)
     :param value: Value to XOR array against (str, list, bytes, bytearray, int)
-    :param count: Number of times to perform function
-    :type count: int
     :rtype: bytes
     """
     data = utils.getbytearray(data)
     value = utils.getbytearray(value)
-    for _ in range(count):
-        for offset, byte in enumerate(data):
-            data[offset] = ((byte ^ value[offset % len(value)]) & 0xff)
+    for offset, byte in enumerate(data):
+        data[offset] = ((byte ^ value[offset % len(value)]) & 0xff)
     return bytes(data)
 
 
-def SUB(data, value=0, *, count=1):
+def SUB(data, value=0):
     """Subtract 'value' from each byte in 'data', 'count' times
      
     :param data: Data to perform operation on (str, list, bytes, bytearray, int)
     :param value: Value to subtract
     :type value: int
-    :param count: Number of times to perform function
-    :type count: int
     :rtype: bytes
     """
     data = utils.getbytearray(data)
-    for _ in range(count):
-        for offset, byte in enumerate(data):
-            data[offset] = ((byte - value) & 0xff)
+    for offset, byte in enumerate(data):
+        data[offset] = ((byte - value) & 0xff)
     return bytes(data)
 
 
-def ADD(data, value=0, *, count=1):
+def ADD(data, value=0):
     """Add 'value' to each byte in 'data', 'count' times
      
     :param data: Data to perform operation on (str, list, bytes, bytearray, int)
     :param value: Value to add
     :type value: int
-    :param count: Number of times to perform function
-    :type count: int
     :rtype: bytes
     """
     data = utils.getbytearray(data)
-    for _ in range(count):
-        for offset, byte in enumerate(data):
-            data[offset] = ((byte + value) & 0xff)
+    for offset, byte in enumerate(data):
+        data[offset] = ((byte + value) & 0xff)
     return bytes(data)
     
     
@@ -229,4 +213,56 @@ def reverse(data):
     data = utils.getbytearray(data)
     r_data = list(reversed(list(data)))
     return bytes(r_data)
-        
+
+
+def pad(data, padding, target_size=-1, *, front=False, even=False):
+    """Add padding bytes to given data
+    
+    If padding both sides, the padding on the end will
+    recieve more if the pad size is not even.
+    
+    :param data: Data to perform operation on (str, list, bytes, bytearray, int)
+    :param padding: Data to use for padding (str, list, bytes, bytearray, int)
+    :param target_size: Target size of returned, padded data. If -1, given padding is simply added and returned
+    :type target_size: int
+    :param front: Place padding at the beginning of the data, instead of the end
+    :type front: bool
+    :param even: Divide padding between the beginning and end of data, as evenly as possible
+    :type even: bool
+    :rtype: bytes
+    """
+    data = utils.getbytearray(data)
+    data_size = len(data)
+    padding = utils.getbytearray(padding)
+    padding_size = len(padding)
+    
+    if target_size == -1:
+        target_size = data_size + padding_size # Set target_size big enough for 1 "padding"
+    
+    size_diff = target_size - data_size
+    
+    if size_diff <= 0: # Do nothing if data is bigger than target size
+        return bytes(data)
+    
+    pad_multiplyer = size_diff // padding_size
+    pad_remainder = size_diff % padding_size
+    
+    padding = padding * pad_multiplyer
+    if pad_remainder:
+        padding.extend(padding[:pad_remainder])
+
+    if even:
+        mid = len(padding) // 2
+        data.extend(padding[mid:])
+        front = padding[:mid]
+        for item in front[::-1]:
+            data.insert(0, item)       
+    elif front:
+        for item in padding[::-1]:
+            data.insert(0, item)
+    else:
+        data.extend(padding)
+            
+    return bytes(data)
+    
+

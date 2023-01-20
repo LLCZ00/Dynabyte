@@ -45,81 +45,71 @@ class DynabyteBase:
         """
         raise NotImplementedError
     
-    def XOR(self, value=0, *, count=1):
-        """XOR each byte of the current instance against 'value', 'count' times
+    def XOR(self, value=0):
+        """XOR each byte of the current instance against 'value'
         
         If value is anything other than int, data will be XOR'd against
         the value sequentially (like a key).
         
         :param value: Value to XOR array against (int, str, list, bytes, or bytearray)
-        :param count: Number of times to XOR array against value
-        :type count: int
         """
-        return self.run(callback=lambda data: ops.XOR(data, value), count=count)
+        return self.run(callback=lambda data: ops.XOR(data, value))
         
     def __xor__(self, value):
         return self.XOR(value)
         
-    def SUB(self, value=0, *, count=1):
-        """Subtract 'value' from each byte of the current instance, 'count' times
+    def SUB(self, value=0):
+        """Subtract 'value' from each byte of the current instance
          
         :param value: Value to subtract from each byte of array
         :type value: int
-        :param count: Number of times to subtract value from array
-        :type count: int
         """
-        return self.run(callback=lambda data: ops.SUB(data, value), count=count)
+        return self.run(callback=lambda data: ops.SUB(data, value))
         
     def __sub__(self, value):
         return self.SUB(value)
         
-    def ADD(self, value=0, *, count=1):
-        """"Add 'value' to each byte of the current instance, 'count' times
+    def ADD(self, value=0):
+        """"Add 'value' to each byte of the current instance
         
         :param value: Value to add to each byte of array
         :type value: int
-        :param count: Number of times to add value to array
-        :type count: int
         """
-        return self.run(callback=lambda data: ops.ADD(data, value), count=count)
+        return self.run(callback=lambda data: ops.ADD(data, value))
         
     def __add__(self, value):
         return self.ADD(value)
         
-    def ROL(self, value=0, *, count=1):
-        """Circular rotate shift left each byte of the current instance by 'value' bits, 'count' times
+    def ROL(self, value=0):
+        """Circular rotate shift left each byte of the current instance by 'value' bits
         
         :param value: Number of places to shift array
         :type value: int
-        :param count: Number of times to run ROL
-        :type count: int
         """
-        return self.run(callback=lambda data: ops.ROL(data, value), count=count)
+        return self.run(callback=lambda data: ops.ROL(data, value))
         
     def __lshift__(self, value):
         return self.ROL(value)
         
-    def ROR(self, value=0, *, count=1):
-        """Circular rotate shift right each byte of the current instance by 'value' bits, 'count' times
+    def ROR(self, value=0):
+        """Circular rotate shift right each byte of the current instance by 'value' bits
         
         :param value: Number of places to shift array
         :type value: int
-        :param count: Number of times to run ROR
-        :type count: int
         """
-        return self.run(callback=lambda data: ops.ROR(data, value), count=count)
+        return self.run(callback=lambda data: ops.ROR(data, value))
         
     def __rshift__(self, value):
         return self.ROR(value)
         
-    def RC4(self, key, *, count=1):
+    def RC4(self, key):
         """Encrypt/decrypt data with key using RC4
 
         :param key: Key to encrypt data with (str, list, bytes, bytearray, int)
         :param count: Number of times to run RC4
         :type count: int
         """
-        return self.run(callback=lambda data: ops.RC4(data, key), count=count)
+        return self.run(callback=lambda data: ops.RC4(data, key))
         
     def AESEncrypt(self, key):
         """Encrypt/decrypt data using AES
@@ -151,6 +141,34 @@ class DynabyteBase:
         If using on a file or particularly large string, be aware of the buffersize
         """
         return self.run(callback=lambda data: ops.reverse(data))
+        
+    def pad(self, padding, target_size=-1, *, front=False, even=False):
+        """Add padding bytes to given data
+        
+        If padding both sides, the padding on the end will
+        recieve more if the pad size is not even. Be aware of 
+        the buffersize when using with File objects.
+        
+        :param padding: Data to use for padding (str, list, bytes, bytearray, int)
+        :param target_size: Target size of returned, padded data. If -1, given padding is simply added and returned
+        :type target_size: int        
+        :param front: Place padding at the beginning of the data, instead of the end
+        :type front: bool
+        :param even: Divide padding between the beginning and end of data, as evenly as possible
+        :type even: bool
+        :rtype: bytes
+        """
+        return self.run(callback=lambda data: ops.pad(data, padding, target_size, front=front, even=even))
+        
+    def strip(self, *chars):
+        """Remove leading and trailing characters from data
+        
+        Wrapper around the builtin strip method
+        
+        :chars: Characters to remove from data (str, list, bytes, bytearray, int)
+        """
+        chars = [utils.getbytearray(character) for character in chars]
+        return self.run(callback=lambda data: data.strip(*chars))
 
 
 class Array(DynabyteBase):
@@ -173,31 +191,6 @@ class Array(DynabyteBase):
         """Returns string representation of data when object pass to str()
         """
         return format(self, "str")
-        
-    def __iter__(self):
-        """Makes object iterable
-        
-        Also allows object to be converted with bytes(), list(), etc.
-        """
-        for byte in self.data:
-            yield byte
-            
-    def __getitem__(self, pos):
-        """Allows items to be retreived from data array
-        """
-        return self.data[pos]
-        
-    def __setitem__(self, pos, value):
-        """Allows values in data array to be changed
-        
-        Accepts int and str only
-        """
-        if type(value) is int:
-            self.data[pos] = value
-        elif type(value) is str:
-            self.data[pos] = ord(value) # Error pops if its more than one letter
-        else:
-            raise ValueError(str(value))
         
     def __format__(self, style=None):
         """Returns various representations of instance data when used with format() built-in
@@ -225,6 +218,80 @@ class Array(DynabyteBase):
             array = self.data.decode(self.encoding, errors='ignore')
         return array
         
+    def __eq__(self, other):
+        """Determine equality between data and
+        other (normalized) value
+        """
+        if type(other) is type(self):
+            return self.data == other.data 
+        return self.data == utils.getbytearray(other)
+        
+    def __normalize_value(self, value):
+        """Convert various data types so list-like
+        functions can accept more than just int
+        
+        :rtype: int
+        """
+        if type(value) is int:
+            return value
+        elif type(value) is str:
+            return ord(value)
+        elif type(value) is bytes:
+            return int.from_bytes(value, "big")
+        else:
+            raise ValueError(str(value)) 
+    
+    def __iter__(self):
+        """Makes object iterable, and allows 
+        it to be converted with bytes(), list(), etc.
+        """
+        for byte in self.data:
+            yield byte
+            
+    def __getitem__(self, pos):
+        """Allows items to be retreived from data array
+        """
+        return self.data[pos]
+        
+    def __setitem__(self, pos, value):
+        """Allows values in data array to be changed
+        
+        :param pos: Index position
+        :type pos: int
+        :param value: int, unicode character, or bytes object (big endian)
+        """
+        self.data[pos] = self.__normalize_value(value)       
+        
+    def __len__(self):
+        """Return length of data
+        """
+        return len(self.data)
+        
+    def insert(self, pos, value):
+        """Inserts value into data at specified index
+
+        :param pos: Index position
+        :type pos: int
+        :param value: int, unicode character, or bytes object (big endian)
+        """
+        self.data.insert(pos, self.__normalize_value(value))
+        
+    def append(self, value):
+        """Adds value to the end of data
+        
+        :param value: int, unicode character, or bytes object (big endian)
+        """
+        self.insert(len(self.data), value) # Value normalized/converted by self.insert()
+        
+    def extend(self, iterable):
+        """Add all elements of iterable value to end of data
+        
+        :param value: List, tuple, string, dynabyte.core.Array objects
+        """
+        if type(iterable) is not type(self):
+            iterable = utils.getbytearray(iterable)            
+        self.data.extend(iterable)
+        
     def gethash(self, hash="sha256"):
         """Return hash of current instance data
         
@@ -235,6 +302,52 @@ class Array(DynabyteBase):
         hash_obj = hashlib.new(hash)
         hash_obj.update(self.data)
         return hash_obj.hexdigest()
+        
+    def writefile(self, path, mode='wb'):
+        """Write instance data to given file
+        
+        By default, creates/overwrites file.
+        Returns the path of written file upon success,
+        None on failure.
+        
+        :param path: Path of file to write to
+        :type path: str
+        :param mode: Mode to open file with
+        :type mode: str
+        :returns path: Path of written file
+        :rtype: str
+        """
+        try:
+            with open(path, mode) as file:
+                file.write(bytes(self.data))
+        except:
+            return None
+        else:
+            return path
+            
+    @classmethod
+    def fromfile(cls, path, buffersize=-1, *, start=0, encoding="utf-8"):
+        """Return Array instance, initialized
+        with the data retrieved from the file at the given path
+            
+        Beware large files.
+            
+        :param: Path of file to read from
+        :type param: str
+        :param buffersize: Number of bytes to read from file
+        :type buffersize: int        
+        :param start: File offset to start reading from
+        :type start: int
+        :param encoding: Encoding scheme for returned Array instance
+        :type encoding: str 
+        :returns Array: Array object
+        :rtype: dynabyte.core.Array
+        """
+        result = None
+        with open(path, "rb") as file:
+            file.seek(start)
+            result = file.read(buffersize)
+        return cls(result, encoding=encoding)
                 
     def run(self, callback, *, cb_type="full", output=None, count=1):
         """Execute operations defined in a callback function upon data. 
@@ -263,7 +376,7 @@ class Array(DynabyteBase):
 
 class File(DynabyteBase):
     """Dynabyte class for interacting with files"""
-    def __init__(self, path, *, buffersize=8192):
+    def __init__(self, path, buffersize=8192, *, start=0):
         self.path = path
         self.buffersize = buffersize
         

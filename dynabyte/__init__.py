@@ -1,3 +1,3 @@
 from .core import *
-from .utils import *
 from .operations import *
+from . import utils

@@ -20,7 +20,7 @@ import os
 from random import randint
 
 
-def getbytearray(data, encoding="utf-8"):
+def getbytearray(data, *, encoding="utf-8"):
     """Convert string, list, bytes, or int objects to bytearray
     
     List-type input data can be a combination of any
