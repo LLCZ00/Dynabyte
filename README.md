@@ -5,20 +5,22 @@ Dynabyte is a python module designed to streamline the process of obfuscating an
 See [*documentation*](https://dynabyte.readthedocs.io/en/latest/)
 
 ### Classes and Built-in Operations
-Dynabyte provides the *File* and *Array* classes for easily performing common operations on files and arrays/strings/bytes/integers, respectively. The built-in methods for both *Array* and *File* objects are *XOR*, *ADD*, *SUB*, *ROL*, *ROR*, *RC4*, *reverse*, *b64encode*, *b64decode*, *AESEncrypt*, and *AESDecrypt*. They can be used individually or chained together into a one-liner, as shown in the example below:
+Dynabyte provides the *File* and *Array* classes, which share a number of built-in methods for performing operations on arrays/strings/bytes/integers or files, respectively. These built-in methods can also be used individually as standalone functions. Details on all built-in operations can be found [*here*](https://dynabyte.readthedocs.io/en/latest/core_functions.html#built-in-operations).
 ```py
 import dynabyte
 
 obf_string = dynabyte.Array("Be veeeery quiet, I'm huntin rabbits")
-
-obf_string.RC4("PassW0rd!") # Operations are executed from left to right when chained
+# Encode
+obf_string.pad("PAD", 32)
+obf_string.RC4("PassW0rd!")
+obf_string.reverse()
+obf_string.XOR([0xDE, 0xAD, 0xBE, 0xEF])
 obf_string.ROR(7)
-obf_string.XOR(["xor", 0xAB, 0x2, 'k', 'e', 'y']) # List inputs can be a mix of any valid input type
 obf_string.SUB(0x1A)
 print(obf_string) # "(Jumbled up string that I can't paste here)"
 
 # Perform previous operations in reverse (executed left to right)
-obf_string.ADD(0x1A).XOR(["xor", 0xAB, 0x2, 'k', 'e', 'y']).ROL(7).RC4("PassW0rd!") 
+obf_string.ADD(0x1A).ROL(7).XOR([0xDE, 0xAD, 0xBE, 0xEF]).reverse().RC4("PassW0rd!").strip("PAD")
 print(obf_string) # "Be veeeery quiet, I'm huntin rabbits"
 ```
 Typical binary operators can be used in place of *XOR*, *ADD*, *SUB*, *ROL*, and *ROR*:
@@ -97,8 +99,9 @@ Install from PyPI
 pip install dynabyte
 ```
 ## Known Issues & TODO
-- Expand AES
-- Add RSA
+- Expand AES, add RSA
+- Finish adding tests
+- Refactor File class (maybe)
 - Processing speed of larger files could possibly be improved. Things to try:
     - Migrating all file IO and byte processing into Cython
     - Switching to numpy arrays (instead of bytearrays) and integrating them with Cython
