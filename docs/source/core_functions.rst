@@ -26,6 +26,8 @@ The functions can be used directly, or as methods from *Array* and *File* object
 
 .. autofunction:: dynabyte.operations.reverse
 
+.. autofunction:: dynabyte.operations.pad
+
 .. autofunction:: dynabyte.operations.RotateLeft
 
 .. autofunction:: dynabyte.operations.RotateRight
@@ -59,15 +61,29 @@ Base class for dynabyte.core.Array and dynabyte.core.File, providing methods for
 
 .. autofunction:: dynabyte.core.DynabyteBase.b64decode
 
+.. autofunction:: dynabyte.core.DynabyteBase.pad
+
+.. autofunction:: dynabyte.core.DynabyteBase.strip
+
 Array
 ^^^^^
 Array objects are iterable, and accept string, integer, byte, bytearray, list and other dynabyte.core.Array objects as input. List-type objects can contain a combination of any other valid input type. See Basic Usage section for details on printing/formating.
 
 .. autofunction:: dynabyte.core.Array
 
+.. autofunction:: dynabyte.core.Array.fromfile
+
+.. autofunction:: dynabyte.core.Array.writefile
+
 .. autofunction:: dynabyte.core.Array.run
 
 .. autofunction:: dynabyte.core.Array.gethash
+
+.. autofunction:: dynabyte.core.Array.insert
+
+.. autofunction:: dynabyte.core.Array.append
+
+.. autofunction:: dynabyte.core.Array.extend
 
 File
 ^^^^

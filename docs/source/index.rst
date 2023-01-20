@@ -6,7 +6,7 @@
 Dynabyte Documentation
 =========================
 
-Dynabyte is a python module designed to streamline the process of obfuscating and de-obfuscating data, allowing you to quickly perform bit-wise operations on strings or files with as little code as possible.
+Dynabyte is a python module designed to streamline the process of obfuscating and de-obfuscating data, allowing you to quickly perform byte operations on strings or files with as little code as possible.
 
 Installation
 ------------

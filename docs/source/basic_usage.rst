@@ -3,7 +3,7 @@ Basic Usage
 
 Classes and Built-in Operations
 -------------------------------
-Dynabyte provides the *File* and *Array* classes for easily performing common operations on files and arrays (strings/list/bytes/bytearray/integers), respectively. The built-in methods shared by both *Array* and *File* objects are *XOR*, *ADD*, *SUB*, *ROL*, *ROR*, *RC4*, *reverse*, *b64encode*, *b64decode*, *AESEncrypt*, and *AESDecrypt*. They can be used individually or chained together into a one-liner, as shown in the example below:
+Dynabyte provides the *File* and *Array* classes, which share a number of built-in methods for performing operations on arrays/strings/bytes/integers or files, respectively. These built-in methods can also be used individually as standalone functions. Details on all built-in operations can be found in the Core/Classes section of the documentation.
 
 .. code-block:: python
 
