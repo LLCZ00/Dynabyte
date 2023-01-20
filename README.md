@@ -1,4 +1,5 @@
 # Dynabyte
+![PyPI](https://img.shields.io/pypi/v/dynabyte)
 ### _Simplifying Byte Operations_
 Dynabyte is a python module designed to streamline the process of obfuscating and de-obfuscating data, allowing you to quickly perform bit-wise operations on strings or files with as little code as possible.
 ## Basic Usage
