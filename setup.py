@@ -33,5 +33,5 @@ setup(
     python_requires=">=3.8",
     zip_safe=False,
     install_requires=["pycryptodome"],
-    packages=find_packages()
+    packages=find_packages(exclude=["tests"])
 )
