@@ -423,7 +423,7 @@ class File(DynabyteBase):
         data = None
         try:
             with open(self.path, "rb") as fileobj:
-                data = Array(file.read(buffer), encoding=encoding)
+                data = Array(fileobj.read(buffer), encoding=encoding)
         except FileNotFoundError:
             pass
         return data 
